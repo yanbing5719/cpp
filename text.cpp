@@ -76,3 +76,20 @@ int main(){
     st.paixu();
     return 0;
 }*/
+#include <iostream>
+#include <string>
+using namespace std;
+int main(){
+    /*string s1,s2;
+      getline(cin,s1);
+      getline(cin,s2,'a');
+      cout<<s1<<' '<<s2;
+      return 0;*/
+      string s("hello");
+      cout<<s<<endl;
+      s.insert(1,"xxx");
+        cout<<s<<endl;
+        s.insert(2,3,'m');
+        cout<<s<<endl;
+      return 0;
+}
