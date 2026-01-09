@@ -76,20 +76,64 @@ int main(){
     st.paixu();
     return 0;
 }*/
-#include <iostream>
-#include <string>
+/*#include <iostream>
 using namespace std;
 int main(){
-    /*string s1,s2;
-      getline(cin,s1);
-      getline(cin,s2,'a');
-      cout<<s1<<' '<<s2;
-      return 0;*/
-      string s("hello");
-      cout<<s<<endl;
-      s.insert(1,"xxx");
-        cout<<s<<endl;
-        s.insert(2,3,'m');
-        cout<<s<<endl;
-      return 0;
+    string s1("hello");
+    string s2=" world";
+    string s3("hello world");
+     if(s1==s2){
+        cout<<"no"<<endl;
+     }
+     if(s3==s1+s2){
+        cout<<"yes"<<endl;
+     }
+     return 0;
+}*/
+/*
+#include <iostream>
+#include <utility>
+using namespace std;
+int main(){
+   int a,b;
+   cin>>a>>b;
+   int x=add(a,b);
+   double c,d;
+   cin>>c>>d;
+   double y=add(c,d);
+}
+int Intadd(int a,int b){
+    return a+b;
+}
+double Doubleadd(double a,double b){
+    return a+b;
+}
+int add(int a,int b){
+    return a+b;
+}
+double add(double a,double b){
+    return a+b;
+}*/
+#include <iostream>
+using namespace std;
+struct student{
+    string name;
+    int age;
+    int score[3];
+};
+ostream& operator<<(ostream &os,const student &st){
+    os<<st.name<<endl;
+    os<<st.age<<endl;
+    return os;
+}
+istream& operator>>(istream &is,student &st){
+    is>>st.name;
+    is>>st.age;
+    return is;
+}       
+int main(){
+    student st;
+    cin>>st;
+   cout<<st<<endl;
+   return 0;
 }
