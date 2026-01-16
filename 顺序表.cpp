@@ -77,7 +77,7 @@ void print(vector<int>&a)
     }
     cout<<endl;
 }
-
+ //stl封装顺序表
 #include <iostream>
 #include <vector>
 using namespace std;
