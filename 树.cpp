@@ -71,6 +71,35 @@ TreeNode* searchBST(TreeNode* root, int val) {
         }
         return root;
     }
+    //BST删除结点
+TreeNode *deletenode(TreeNode*root,int key){
+   if(!root)return nullptr;
+   if(key<root->val){
+    deletenode(root->left,key);
+   }else if(key>root->val){
+    deletenode(root->right,key);
+   }else{
+    //只有两个或者一个孩子
+    if(root->left==nullptr){
+        TreeNode * rightroot=root->right;
+        delete(root);
+        return rightroot;
+    }
+   }if(root->right=nullptr){
+        TreeNode * leftroot=root->left;
+        delete(root);
+        return leftroot;
+    }else{
+    //有两个孩子
+    TreeNode *objroot=root->right;
+    while(objroot->left!=nullptr){
+        objroot=objroot->left;
+    }
+    root->val=objroot->val;
+    root->right=deletenode(root->right,objroot->val);
+    return root;
+}
+}
 int main(){
     TreeNode *root=new TreeNode (1);
     root->left=new TreeNode(2);

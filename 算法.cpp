@@ -8,47 +8,29 @@ int main(){
     for(int i=n;i>=0;i--){
         int a;
         cin>>a;
-        //符号
         if(a==0) continue;
-        if(a<0)cout<<'-';
-        if(a>0){
-            if(i==n){
-                continue;
-            }else{
-                cout<<'+';
-            }
+    //符号
+    if(a<0){
+        cout<<'-';
+    }else{
+        if(i!=n){
+            cout<<'+';
         }
-        //数字
-        a=abs(a);
-        if(a==0){
-            continue;
-        }else if(a==1&&i!=0){
-            continue;
-        }
-        else{
-            cout<<a;
-        }
-        //输出x
-        if(a==0){
-            continue;
-        }
-         if(i==0){
-            continue;
-        }
-        if(i==1){
+    }
+    //数字
+    a=abs(a);
+    if((a!=1)||(a==1&&i==0)){
+        cout<<a;
+    }
+    //次方
+    if(i!=0){
+        if(i!=1){
+            cout<<'x'<<'^'<<i;
+        }else{
             cout<<'x';
         }
-        else{
-            cout<<'x'<<'^';
-        }
-        //次数
-        if(a==0){
-             continue;
-        }
-         if(i==0||i==1){
-          continue;
-        }else{
-            cout<<i;
-        }
+    }else{
+        continue;
+    }
     }
 }
