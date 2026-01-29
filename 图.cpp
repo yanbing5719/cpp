@@ -28,6 +28,7 @@ int main(){
 }
 
 */
+/*
 //DFS+邻接表
 #include<bits/stdc++.h>
 using namespace std;
@@ -56,4 +57,43 @@ int main(){
     creat(2,3);
     dfs(0);
   return 0;
+}*/
+//DFS+连通块
+#include <bits/stdc++.h>
+using namespace std;
+vector<vector<int>> graph;
+vector<bool> visited;
+void creat(int u,int v){
+   graph[u].push_back(v);
+   graph[v].push_back(u);  // 无向图，需要双向连接
+}
+void dfs(int u){
+    visited[u]=true;
+    for(int v:graph[u]){
+        if(!visited[v]){
+            dfs(v);
+        }
+    }
+}
+int main(){
+int n=6;
+graph.resize(n);
+visited.resize(n,false);
+//第一个连通块
+creat(0,1);
+creat(0,2);
+creat(1,2);
+//第二个连通块
+creat(3,4);
+creat(3,5);
+creat(4,5);
+int cnt=0;
+for(int i=0;i<n;i++){
+    if(!visited[i]){
+        dfs(i);
+        cnt++;
+    }
+}
+cout<<cnt<<endl;
+return 0;
 }
