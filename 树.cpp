@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 using namespace std;
 struct TreeNode{
     int val;
@@ -6,6 +7,15 @@ struct TreeNode{
     TreeNode *right;
     TreeNode(int x):val(x),left(nullptr),right(nullptr){}
 };
+//构建树
+TreeNode *build(vector<int>&a,int l,int r){
+    if(l>r) return nullptr;
+    int m=(l+r)/2;
+    TreeNode *root=new TreeNode(a[m]);
+    root->left=build(a,l,m-1);
+    root->right=build(a,m+1,r);
+    return root;
+}
 //前序遍历
 void front(TreeNode *root){
     if(!root)return ;
