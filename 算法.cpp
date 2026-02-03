@@ -33,8 +33,8 @@ int main(){
         continue;
     }
     }
-}*/
-/*P5731 【深基5.习6】蛇形方阵
+}
+//P5731 【深基5.习6】蛇形方阵
 #include <iostream>
 using namespace std;
 //方向向量 右 下 左 上
@@ -64,9 +64,9 @@ cin>>n;
     }
     cout<<'\n';
   }
-}*/
+}
 //P1601 高精度加法
-/*#include <iostream>
+#include <iostream>
 using namespace std;
 const int N=1e3;
 int a[N],b[N],c[N];
@@ -96,8 +96,8 @@ int main(){
         cout<<c[i];
     }
     return 0;
-}*/
-/* 高精度减法
+}
+// 高精度减法
 #include <bits/stdc++.h>
 using namespace std;
 const int N=1e5;
@@ -139,9 +139,9 @@ for(int i=lc-1;i>=0;i--){
     cout<<c[i];
 }
 return 0;
-}*/
+}
 //高精度乘法
-/*#include <bits/stdc++.h>
+#include <bits/stdc++.h>
 using namespace std;
 const int N=1e4;
 int a[N],b[N],c[N];
@@ -176,7 +176,7 @@ int main(){
         cout<<c[i];
     }
     return 0;
-}*/
+}
 //高精度除法
 #include <bits/stdc++.h>
 using namespace std;
@@ -205,4 +205,111 @@ int main(){
         cout<<c[i];
     }
     return 0;
+}*/
+/*
+//枚举算法 P1003 [NOIP 2011 提高组] 铺地毯
+#include <iostream>
+using namespace std;
+const int N=1e4+10;
+int a[N],b[N],g[N],k[N];
+int n;
+int main(){
+    cin>>n;
+    for(int i=1;i<=n;i++){
+        cin>>a[i]>>b[i]>>g[i]>>k[i];
+    }
+    int x,y;
+    cin>>x>>y;
+    for(int i=n;i>=1;i--){
+        if(x>=a[i]&&x<=a[i]+g[i]&&y>=b[i]&&y<=b[i]+k[i]){
+            cout<<i;
+            return 0;
+        }
+    }
+      cout<<-1;
+      return 0;
+}
+//二进制枚举
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+int n;
+cin>>n;
+for(int mask=0;mask<(1<<n);mask++){
+    for(int i=0;i<n;i++){
+     if(mask&(1<<i)){
+        cout<<"所选"<<i<<' ';
+     }
+    }
+    cout<<endl;
+}
+}
+
+*/
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    //方向向量 右左上下
+    int dx[5]={0,0,0,1,-1};
+    int dy[5]={0,1,-1,0,0};
+    int g[5][5];
+    int T;cin>>T;
+    while(T--){
+        //读入数据
+        for(int i=0;i<5;i++){
+            string s;
+            cin>>s;
+            for(int j=0;j<5;j++){
+                g[i][j]=s[j]-'0';
+            }
+        }
+    int ans=1e9;
+    //枚举第一行
+    for(int mask=0;mask<(1<<5);mask++){
+        //拷贝先前的数据
+        int a[5][5];
+        memcpy(a,g,sizeof(a));
+        int cnt=0;
+        //处理第一行(j代表每一列)
+        for(int j=0;j<5;j++){
+            if(mask&(1<<j)){
+            cnt++;
+            //翻转按下的周围的灯
+            for(int k=0;k<5;k++){
+                int x=0+dx[k];
+                int y=j+dy[k];
+                if(x>=0&&x<5&&y>=0&&y<5){
+                    a[x][y]^=1;
+                }
+            }
+            }
+        }
+        //根据上一行灯的亮灭来决定下一行
+        for(int i=1;i<5;i++){
+            for(int j=0;j<5;j++){
+            if(a[i-1][j]==0){
+                cnt++;
+                  for(int k=0;k<5;k++){
+                int x=i+dx[k];
+                int y=j+dy[k];
+                if(x>=0&&x<5&&y>=0&&y<5){
+                    a[x][y]^=1;
+                }
+            }
+            }
+            }
+        }
+        bool ok=true;
+        for(int i=0;i<5;i++){
+            if(a[4][i]==0){
+                ok=false;
+                break;
+            }
+        }
+        if(ok)ans=min(ans,cnt);
+    }
+    if(ans>6)cout<<-1<<endl;
+    else cout<<ans<<endl;
+}
+return 0;
 }
