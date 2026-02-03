@@ -246,6 +246,8 @@ for(int mask=0;mask<(1<<n);mask++){
 }
 
 */
+/*
+//费解的开关
 #include <bits/stdc++.h>
 using namespace std;
 int main(){
@@ -312,4 +314,50 @@ int main(){
     else cout<<ans<<endl;
 }
 return 0;
+}
+*/
+/*
+//一维前缀和
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int n,q;
+    cin>>n>>q;
+    vector<long long>a(n+1,0);
+    vector<long long>f(n+1,0);//前缀和数组
+    for(int i=1;i<=n;i++){
+       cin>>a[i];
+    }
+    //处理前缀和数组
+    for(int i=1;i<=n;i++){
+        f[i]=f[i-1]+a[i];
+    }
+    while(q--){
+        int l,r;
+        cin>>l>>r;
+        cout<<f[r]-f[l-1]<<endl;
+    }
+    return 0;
+}*/
+//P1115 最大子段和
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int n;
+    cin>>n;
+    vector<int> a(n+1,0);
+    for(int i=1;i<=n;i++){
+        cin>>a[i];
+    }
+    vector<int>f(n+1,0);
+    for(int i=1;i<=n;i++){
+        f[i]=f[i-1]+a[i];
+    }
+    int ret=-1e9;
+    int prev=0;
+    for(int i=1;i<=n;i++){
+        ret=max(ret,f[i]-prev);
+        prev=min(prev,f[i]);
+    }
+    cout<<ret<<endl;
 }
