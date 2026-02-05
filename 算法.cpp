@@ -339,6 +339,7 @@ int main(){
     }
     return 0;
 }*/
+/*
 //P1115 最大子段和
 #include <bits/stdc++.h>
 using namespace std;
@@ -360,4 +361,63 @@ int main(){
         prev=min(prev,f[i]);
     }
     cout<<ret<<endl;
+}*/
+//一维差分
+/*#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int n,m,l,r,k;
+    cin>>n>>m;
+    //原始数组
+    vector<int> a(n+1);
+    vector<int> f(n+1);
+    for(int i=1;i<=n;i++){
+        cin>>a[i];
+        //差分数组
+        f[i]=a[i]-a[i-1];
+    }
+    
+    while(m--){
+        cin>>l>>r>>k;
+    f[l]+=k;
+    f[r+1]-=k;
+    }
+    //还原原始数组
+    for(int i=1;i<=n;i++){
+        a[i]=a[i-1]+f[i];
+        cout<<a[i]<<' ';
+    }
+}
+*/
+//P3406 海底高铁
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int M,N;
+    cin>>N>>M;
+    vector<long long>f(N+1,0);
+    int x;cin>>x;
+    for(int i=2;i<=M;i++){
+        int y;
+        cin>>y;
+    if(x>y){
+        f[y]++;
+        f[x]--;
+    }else{
+        f[x]++;
+        f[y]--;
+    }
+    x=y;
+}
+for(int i=1;i<=N;i++){
+    f[i]+=f[i-1];
+}
+    long long ret=0;
+for(int i=1;i<=N;i++){
+    long long a,b,c;
+    cin>>a>>b>>c;
+    ret+=min(a*f[i],c+b*f[i]);
+}
+cout<<ret<<endl;
+return 0;
 }
