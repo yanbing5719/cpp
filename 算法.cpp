@@ -390,6 +390,7 @@ int main(){
 }
 */
 //P3406 海底高铁
+/*
 #include <bits/stdc++.h>
 using namespace std;
 int main(){
@@ -421,3 +422,35 @@ for(int i=1;i<=N;i++){
 cout<<ret<<endl;
 return 0;
 }
+*/
+//同向双指针
+//UVA11572 唯一的雪花 Unique Snowflakes
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int t,n;
+    cin>>t;
+
+    while(t--){
+   cin>>n;
+    vector<int> a(n);
+   for(int i=0;i<n;i++){
+    cin>>a[i];
+   }
+   int l=0,r=0;
+   int result=0;
+   unordered_map<int,int>mp;
+    while(r<n){
+        mp[a[r]]++;
+    while(mp[a[r]]>1){
+        mp[a[l]]--;
+        l++;
+    }
+    result=max(result,r-l+1);
+    r++;
+    }
+    cout<<result<<endl;
+   }
+   return 0;
+    }
+
