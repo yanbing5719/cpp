@@ -425,7 +425,7 @@ return 0;
 */
 //同向双指针
 //UVA11572 唯一的雪花 Unique Snowflakes
-#include <bits/stdc++.h>
+/*#include <bits/stdc++.h>
 using namespace std;
 int main(){
     int t,n;
@@ -453,4 +453,45 @@ int main(){
    }
    return 0;
     }
+*/
+/*
+#include <bits/stdc++.h>
+using namespace std;
+const int N=1e6;
+int a[N];
+long long n;
+long long cal(long long mid){
+    long long count=0;
+    for(int i=0;i<n;i++){
+        count+=a[i]/mid;
+    }
+    return count;
+}
+int main(){
+    int k;
+    cin>>n>>k;
+   for(int i=0;i<n;i++){
+    cin>>a[i];
+   }
+       long long total = 0;
+    for (int i = 0; i < n; i++) total += a[i];
+    if (total < k) {
+        cout << 0 << endl;
+        return 0;
+    }
+
+    long long left=1;
+     long long right = *max_element(a, a + n);  
+    while(left<right){
+        long long mid = left + (right - left + 1) / 2; 
+        if (cal(mid) >= k) {
+            left = mid;        
+        } else {
+            right = mid - 1;   
+        }
+    }
+   cout<<left<<endl;
+   return 0;
+}
+*/
 
