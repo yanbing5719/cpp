@@ -494,4 +494,46 @@ int main(){
    return 0;
 }
 */
-
+/*
+//P10452 货仓选址
+#include <bits/stdc++.h>
+#include <algorithm>
+using namespace std;
+const int N=1e5;
+int a[N];
+int main(){
+    int n;
+    cin>>n;
+    for(int i=0;i<n;i++){
+        cin>>a[i];
+    }
+    sort(a,a+n);
+    int ret=0;
+    for(int i=0;i<n;i++){
+     ret+=abs(a[i]-a[n/2]);
+    }
+    cout<<ret<<endl;
+    return 0;
+}
+*/
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int n;
+    cin>>n;
+    vector<int>a(n+1);
+    for(int i=1;i<=n;i++){
+        cin>>a[i];
+    }
+    vector<int>f(n+1,0);
+    for(int i=1;i<=n;i++){
+        f[i]=f[i-1]+a[i];
+    }
+    int ret=-1e5;
+    int prev=0;
+    for(int i=1;i<=n;i++){
+        ret=max(ret,f[i]-prev);
+        prev=min(prev,f[i]);
+    }
+    cout<<ret<<endl;
+}
