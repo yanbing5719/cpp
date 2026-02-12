@@ -537,3 +537,25 @@ int main(){
     }
     cout<<ret<<endl;
 }
+//贪心算法-最大子段和
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int n;
+    cin>>n;
+    vector<int> a(n+1,0);
+    for(int i=1;i<=n;i++){
+        cin>>a[i];
+    }
+    vector<int>f(n+1,0);
+    for(int i=1;i<=n;i++){
+        f[i]=f[i-1]+a[i];
+    }
+    int ret=-1e9;
+    int prev=0;
+    for(int i=1;i<=n;i++){
+        ret=max(ret,f[i]-prev);
+        prev=min(prev,f[i]);
+    }
+    cout<<ret<<endl;
+}
