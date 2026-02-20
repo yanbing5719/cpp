@@ -30,6 +30,7 @@ int main(){
     execvp("ls",argv);
     return 0;
 }*/
+/*
 #include <unistd.h>
 #include <sys/wait.h>
 #include <iostream>
@@ -51,4 +52,46 @@ int main(){
         perror("fork failed");
     }
     return 0;
+}*/
+#include <unistd.h>
+#include <sys/wait.h>
+#include <iostream>
+using namespace std;
+int main(){
+    int fd[2];
+    if(pipe(fd)==-1){
+        perror("pipe");
+        return 1;
+    }
+    pid_t pid1=fork();
+    if(pid1==-1){
+        perror("fork");
+        return 1;
+    }
+    if(pid1==0){
+    dup2(fd[1],1);
+    close(fd[0]);
+    close(fd[1]);
+   execlp("ls","ls",nullptr);
+   perror("exec,ls");
+   _exit(1);
+    }
+    pid_t pid2=fork();
+    if(pid2==-1){
+        perror("fork");
+        return 1;
+    }
+    if(pid2==0){
+        dup2(fd[0],0);
+        close(fd[0]);
+        close(fd[1]);
+        execlp("wc","wc","-l",nullptr);
+        perror("exec wc");
+        _exit(1);
+        close(fd[0]);
+        close(fd[1]);
+        waitpid(pid1,nullptr,0);
+        waitpid(pid2,nullptr,0);
+        return 0;
+    }
 }
