@@ -53,6 +53,7 @@ int main(){
     }
     return 0;
 }*/
+/*
 #include <unistd.h>
 #include <sys/wait.h>
 #include <iostream>
@@ -94,4 +95,4 @@ int main(){
         waitpid(pid2,nullptr,0);
         return 0;
     }
-}
+}*/
