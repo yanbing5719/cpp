@@ -6,12 +6,12 @@
 #include <sys/wait.h>
 #include <cstdio>
 #include <fcntl.h>
+#include <signal.h>
 
 using namespace std;
-
+string lastdir;
 
 //读取一整行
-
 string read_line()
 {
  string line;
@@ -37,6 +37,7 @@ void exec_command(vector<string> &cmd)
     }
     _exit(1);
 }
+
 //解析命令
 vector<string> parse(string &line)
 {
@@ -87,8 +88,53 @@ vector<string> parse(string &line)
   return parse_line;
 }
 
+//cd命令的实现
+void cd_command(vector<string> &parse_line)
+{
+ char cldir[1024];
+ //获取当前目录
+ if(getcwd(cldir,sizeof(cldir))==nullptr)
+ {
+    perror("getcwd");
+    return ;
+ } 
+ const char *target=nullptr;
+ //cd无参数
+ if(parse_line.size()==1)
+ {
+    target=getenv("HOME");
+    if(target==nullptr)
+    {
+        cout<<"error"<<endl;
+        return ;
+    }
+ }
+//cd-
+else if(parse_line[1]=="-")
+{
+if(lastdir.empty())
+{
+  cout<<"error"<<endl;
+  return ;
+}
+target=lastdir.c_str();
+    cout<<target<<endl;
+}
+//普通路径
+else
+{
+ target=parse_line[1].c_str();
+}
+if(chdir(target)<0)
+{
+    perror("cd");
+}else{
+  lastdir=cldir;
+}
+}
+
 //普通命令的实现
-void smiple_command(vector <string> &parse_line)
+void smiple_command(vector <string> &parse_line,bool background)
 {
    pid_t pid=fork();
    if(pid==0)
@@ -96,83 +142,20 @@ void smiple_command(vector <string> &parse_line)
   exec_command(parse_line);
    }else
    {
+    if(background==false)
    waitpid(pid,nullptr,0);
    }
-}
-
-//管道命令的实现
-void pipe_command(vector<string> &parse_line)
-{
-  int n=parse_line.size();
-  int pos=-1;
-  for(int i=0;i<n;i++)
-  {
-    if(parse_line[i]=="|")
-    {
-    pos=i;
-    break;
-    }
-  }
-  vector<string> left(parse_line.begin(),parse_line.begin()+pos);
-  vector<string> right(parse_line.begin()+pos+1,parse_line.end());
-  int fd[2];
-  if(pipe(fd)==-1)
-{
-  perror("pipe");
-  return ;
-}
-pid_t pid1=fork();
-if(pid1==0)
-{
- dup2(fd[1],1);
- close(fd[0]);
- close(fd[1]);
-  exec_command(left);
-}
-pid_t pid2=fork();
-if(pid2==0)
-{
- dup2(fd[0],0);
- close(fd[0]);
- close(fd[1]);
-  exec_command(right);
-}
-close(fd[0]);
-close(fd[1]);
-waitpid(pid1,nullptr,0);
-waitpid(pid2,nullptr,0);
 }
 
 //重定向命令的实现
 void redirect(vector<string> &parse_line)
 {
-    int n=parse_line.size();
-    int pos=-1;
-    string obj;
-    for(int i=0;i<n;i++)
-    {
-         if (parse_line[i] == ">" ||
-            parse_line[i] == "<" ||
-            parse_line[i] == ">>")
-        {
-            pos=i;
-            obj=parse_line[i];
-            break;
-        }
-    }
-    if(pos==-1)
-    {
-        return ;
-    }
-    vector<string>cmd(parse_line.begin(),parse_line.begin()+pos);
-    string filename=parse_line[pos+1];
-    pid_t pid=fork();
-    if(pid==0)
+    for(int i=0;i<parse_line.size();)
     {
         int fd;
-    if(obj=="<")
+    if(parse_line[i]=="<")
     {
-    fd=open(filename.c_str(),O_RDONLY);
+    fd=open(parse_line[i+1].c_str(),O_RDONLY);
       if(fd<0)
     {
         perror("open");
@@ -180,10 +163,11 @@ void redirect(vector<string> &parse_line)
     }
     dup2(fd,0);
     close(fd);
+    parse_line.erase(parse_line.begin()+i,parse_line.begin()+i+2);
     }
-    else if(obj==">")
+    else if(parse_line[i]==">")
     {
-        fd=open(filename.c_str(),O_WRONLY|O_CREAT|O_TRUNC,0644);
+        fd=open(parse_line[i+1].c_str(),O_WRONLY|O_CREAT|O_TRUNC,0644);
           if(fd<0)
     {
         perror("open");
@@ -191,26 +175,105 @@ void redirect(vector<string> &parse_line)
     }
     dup2(fd,1);
     close(fd);
+    parse_line.erase(parse_line.begin()+i,parse_line.begin()+i+2);
     }
-    else if(obj==">>")
+    else if(parse_line[i]==">>")
     {
-        fd=open(filename.c_str(),O_WRONLY|O_CREAT|O_APPEND,0644);
+        fd=open(parse_line[i+1].c_str(),O_WRONLY|O_CREAT|O_APPEND,0644);
      if(fd<0)
     {
         perror("open");
         _exit(1);
     }
     dup2(fd,1);
-    close(fd);  
+    close(fd);
+    parse_line.erase(parse_line.begin()+i,parse_line.begin()+i+2);
+    }else{
+        i++;
     }
-   exec_command(cmd);
   }
-  waitpid(pid,nullptr,0);
 }
-//主函数
 
+//分割管道
+vector<vector<string>> cut_pipe(vector<string> &parse_line)
+{
+    vector<vector<string>> cmd;
+    vector<string>cur;
+    for(int i=0;i<parse_line.size();i++)
+    {
+        if(parse_line[i]=="|")
+        {
+            cmd.push_back(cur);
+            cur.clear();
+        }else
+        {
+            cur.push_back(parse_line[i]);
+        }
+    }
+    if(!cur.empty())
+    {
+        cmd.push_back(cur);
+    }
+    return cmd;
+}
+
+//管道命令的实现
+void pipe_command(vector<string> &parse_line,bool background)
+{
+  vector<vector<string>> split=cut_pipe(parse_line);
+  int n=split.size();
+ vector<vector<int>> pipefd(n-1,vector<int>(2));
+  for(int i=0;i<n-1;i++)
+  {
+    if(pipe(pipefd[i].data())<0)
+    {
+        perror("pipe");
+        return ;
+    }
+  }
+for(int i=0;i<n;i++)
+{
+pid_t pid=fork();
+if(pid==0)
+{
+    if(i!=0)
+    {
+ dup2(pipefd[i-1][0],0);
+    }
+    if(i!=n-1)
+    {
+ dup2(pipefd[i][1],1);
+    }
+    for(int j=0;j<n-1;j++)
+    {
+        close(pipefd[j][0]);
+        close(pipefd[j][1]);
+    }
+ redirect(split[i]);
+  exec_command(split[i]);
+}
+}
+  for(int j=0;j<n-1;j++)
+    {
+        close(pipefd[j][0]);
+        close(pipefd[j][1]);
+    }
+    if(background==false)
+    {
+    for(int i=0;i<n;i++)
+    {
+        wait(nullptr);
+    }
+}
+}
+
+//主函数
 int main()
 {
+    //处理部分信号
+signal(SIGINT,SIG_IGN);
+signal(SIGCHLD,SIG_IGN);
+
     while(1)
     {
     string line=read_line();
@@ -219,10 +282,17 @@ int main()
         continue;
     }
     vector<string> parse_line=parse(line);
-    int n=parse_line.size();
+    //"&"
+    bool background=false;
+    if(parse_line.back()=="&")
+    {
+        background=true;
+        parse_line.pop_back();
+    }
+    
     //管道
     bool ispipe=false;
-    for(int i=0;i<n;i++)
+    for(int i=0;i<parse_line.size();i++)
     {
         if(parse_line[i]=="|")
         {
@@ -233,7 +303,7 @@ int main()
 
     //重定向
     bool isredirect=false;
-    for(int i=0;i<n;i++)
+    for(int i=0;i<parse_line.size();i++)
     {
          if (parse_line[i] == ">" ||
             parse_line[i] == "<" ||
@@ -249,33 +319,31 @@ int main()
     }
 
     //cd
-
     if(parse_line[0]=="cd")
     {
-        if(n<2){
-            cout<<"error"<<endl;
-            return 0;
-        }
-        chdir(parse_line[1].c_str());
+     cd_command(parse_line);
         continue;
     }
     else if(ispipe)
     {
-        pipe_command(parse_line);
+        pipe_command(parse_line,background);
         continue;
     }
     else if(isredirect)
     {
-
+        pid_t pid=fork();
+        if(pid==0)
+        {
+    redirect(parse_line);
+    exec_command(parse_line);
+        }else
+        {
+            if(background==false)
+            waitpid(pid,nullptr,0);
+        }
     }
     else{
-        smiple_command(parse_line);
+        smiple_command(parse_line,background);
     }
-   
-     /*if(!ispipe&&!isredirect)
-     {
-        smiple_command(parse_line);
-        continue;
-     }*/
     }
 }

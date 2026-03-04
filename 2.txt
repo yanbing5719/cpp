@@ -1,1 +1,40 @@
 （标准输入）
+.
+..
+1.txt
+2.txt
+堆.cpp
+队列和queue.cpp
+链表.cpp
+排序.cpp
+树.cpp
+顺序表.cpp
+算法.cpp
+图.cpp
+栈.cpp
+.git
+shell
+shell.cpp
+test
+test2.cpp
+text.cpp
+总计 676
+drwxrwxr-x 3 yanbing yanbing   4096 Mar  4 21:04 .
+drwxrwxr-x 7 yanbing yanbing   4096 Feb 23 20:21 ..
+-rw-rw-r-- 1 yanbing yanbing    151 Feb 23 21:01 1.txt
+-rw-rw-r-- 1 yanbing yanbing    179 Mar  4 21:05 2.txt
+-rw-rw-r-- 1 yanbing yanbing    635 Jan 30 20:37 堆.cpp
+-rw-rw-r-- 1 yanbing yanbing    931 Jan 15 20:45 队列和queue.cpp
+-rw-rw-r-- 1 yanbing yanbing   2592 Jan 20 20:45 链表.cpp
+-rw-rw-r-- 1 yanbing yanbing   2076 Jan 21 21:33 排序.cpp
+-rw-rw-r-- 1 yanbing yanbing   3200 Jan 28 20:51 树.cpp
+-rw-rw-r-- 1 yanbing yanbing   1609 Jan 15 20:07 顺序表.cpp
+-rw-rw-r-- 1 yanbing yanbing  10244 Feb 12 21:47 算法.cpp
+-rw-rw-r-- 1 yanbing yanbing   1728 Jan 29 11:32 图.cpp
+-rw-rw-r-- 1 yanbing yanbing    706 Jan 20 21:05 栈.cpp
+drwxrwxr-x 8 yanbing yanbing   4096 Mar  2 21:46 .git
+-rwxrwxr-x 1 yanbing yanbing 312224 Mar  4 21:04 shell
+-rw-rw-r-- 1 yanbing yanbing   5822 Mar  4 20:57 shell.cpp
+-rwxrwxr-x 1 yanbing yanbing 283952 Feb 23 20:52 test
+-rw-rw-r-- 1 yanbing yanbing   1881 Feb 27 19:17 test2.cpp
+-rw-rw-r-- 1 yanbing yanbing   9183 Feb 23 21:07 text.cpp
