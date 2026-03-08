@@ -276,6 +276,9 @@ signal(SIGCHLD,SIG_IGN);
 
     while(1)
     {
+        char cwd[1024];
+        getcwd(cwd,sizeof(cwd));
+        cout<<"myshell "<<cwd<<"$"<<flush;
     string line=read_line();
     if(line.size()==0)
     {

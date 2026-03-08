@@ -1,9 +1,9 @@
 ABCDEF
 1.txt
 test
-2.txt
-shell.cpp
 test2.cpp
+shell.cpp
+text.cpp
 算法.cpp
 堆.cpp
 图.cpp
@@ -13,4 +13,3 @@ test2.cpp
 链表.cpp
 队列和queue.cpp
 顺序表.cpp
-text.cpp
