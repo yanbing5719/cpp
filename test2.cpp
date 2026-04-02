@@ -180,6 +180,7 @@ int main()
   return 0;
 }*/
 
+/*
 #include <bits/stdc++.h>
 #include <algorithm>
 using namespace std;
@@ -203,4 +204,111 @@ int main()
     }
     cout<<"Yes";
     return 0;
+}
+*/
+/*
+#include <bits/stdc++.h>
+using namespace std;
+int main()
+{
+    int n,k;
+    cin>>n>>k;
+    vector<int> a(n+1,0);
+    for(int i=1;i<=n;i++)
+    {
+    cin>>a[i];
+    }
+    vector<long long>f(n+1,0);
+    for(int i=1;i<=n;i++)
+    {
+        f[i]=a[i]+f[i-1];
+    }
+   long long cnt=0;
+     vector<long long>p(k,0);
+     p[0]=1;
+   for(int i=1;i<=n;i++)
+   {
+   int mod=f[i]%k;
+   cnt+=p[mod];
+   p[mod]++;
+   }
+    cout<<cnt<<endl;
+    return 0;
+}
+*/
+/*
+#include <bits/stdc++.h>
+using namespace std;
+int dx[8]={1,1,-1,-1,2,2,-2,-2};
+int dy[8]={2,-2,2,-2,1,-1,1,-1};
+int main(){
+queue<pair<int,int>> cur;
+int dis[410][410];
+int n,m,x,y;
+cin>>n>>m>>x>>y;
+for(int i=1;i<=n;i++){
+    for(int j=1;j<=m;j++){
+        dis[i][j]=-1;
+    }
+}
+dis[x][y]=0;
+cur.push({x,y});
+while(!cur.empty()){
+    auto[cx,cy]=cur.front();
+    cur.pop();
+    for(int i=0;i<8;i++){
+        int nx=cx+dx[i];
+        int ny=cy+dy[i];
+    
+    if(nx>=1&&nx<=n&&ny>=1&&ny<=m&&dis[nx][ny]==-1){
+        dis[nx][ny]=dis[cx][cy]+1;
+        cur.push({nx,ny});
+    }
+}
+}
+for(int i=1;i<=n;i++){
+    for(int j=1;j<=m;j++){
+        cout<<left<<setw(3)<<dis[i][j];
+    }
+    cout<<endl;
+}
+return 0;
+}*/
+/*
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int r;
+    cin>>r;
+    vector<vector<int>> f(r+1);
+    for(int i=0;i<=r;i++){
+        f[i].resize(i+1,0);
+    }
+    for(int i=1;i<=r;i++){
+        for(int j=1;j<=i;j++){
+            cin>>f[i][j];
+        }
+    }
+    for(int i=1;i<=r;i++){
+        for(int j=1;j<=i;j++){
+            if(i==1)continue;
+            else if(i==j)f[i][j]=f[i-1][j-1]+f[i][j];
+            else if(j==1){
+                f[i][j]=f[i-1][j]+f[i][j];
+            }else
+            f[i][j]=max(f[i-1][j]+f[i][j],f[i-1][j-1]+f[i][j]);
+        }
+    }
+    int max1=0;
+    for(int i=1;i<=r;i++){
+    max1=max(f[r][i],max1);
+    }
+    cout<<max1<<endl;
+}
+*/
+#include <iostream>
+using namespace std;
+int main()
+{
+ int 
 }

@@ -182,234 +182,95 @@ int main(){
     }
     return 0;
 }*/
+/*
 #include <bits/stdc++.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <signal.h>
-
 using namespace std;
-
-/* ---------------- 数据结构 ---------------- */
-
-struct Command {
-    vector<string> argv;
-    string input;      // <
-    string output;     // > or >>
-    bool append = false;
-};
-
-struct Pipeline {
-    vector<Command> cmds;
-    bool background = false;
-};
-
-/* ---------------- 全局变量 ---------------- */
-
-string last_dir;
-
-/* ---------------- 工具函数 ---------------- */
-
-vector<string> tokenize(const string& line) {
-    vector<string> tokens;
-    string cur;
-    for (size_t i = 0; i < line.size(); i++) {
-        if (isspace(line[i])) {
-            if (!cur.empty()) {
-                tokens.push_back(cur);
-                cur.clear();
-            }
-        } else if (line[i] == '>' || line[i] == '<' ||
-                   line[i] == '|' || line[i] == '&') {
-            if (!cur.empty()) {
-                tokens.push_back(cur);
-                cur.clear();
-            }
-            if (line[i] == '>' && i + 1 < line.size() && line[i + 1] == '>') {
-                tokens.push_back(">>");
-                i++;
-            } else {
-                tokens.push_back(string(1, line[i]));
-            }
-        } else {
-            cur.push_back(line[i]);
-        }
+long long cnt=0;
+int main()
+{
+    int k;
+    long long n; 
+    cin>>n>>k;
+    vector<pair<int,int>> num(n);
+    for(int i=0;i<n;i++){
+    cin>>num[i].first>>num[i].second;
     }
-    if (!cur.empty()) tokens.push_back(cur);
-    return tokens;
+    int l=1,r=1e5,mid;
+    while(l<=r)
+    {
+        cnt=0;
+    mid=l+(r-l)/2;
+    for(int i=0;i<n;i++)
+    {
+        int n1=num[i].first/mid;
+        int n2=num[i].second/mid;
+        cnt+=(n1*n2);
+        if(cnt>=k)break;
+    }
+    
+    if(cnt>=k)l=mid+1;
+    else r=mid-1;
+    }
+    cout<<r;
+    return 0;
+}*/
+/*
+#include <iostream>
+#include <unordered_map>
+using namespace std;
+int main()
+{
+    unordered_map<int,int> mp;
+    mp[3]=5;
+    mp.count(3);
+    mp[3];
+    mp.erase(3);
+    return 0;
 }
-
-/* ---------------- 解析 ---------------- */
-
-Pipeline parse_pipeline(const vector<string>& tokens) {
-    Pipeline p;
-    Command cur;
-
-    for (size_t i = 0; i < tokens.size(); i++) {
-        if (tokens[i] == "|") {
-            p.cmds.push_back(cur);
-            cur = Command();
-        } else if (tokens[i] == "<") {
-            cur.input = tokens[++i];
-        } else if (tokens[i] == ">") {
-            cur.output = tokens[++i];
-            cur.append = false;
-        } else if (tokens[i] == ">>") {
-            cur.output = tokens[++i];
-            cur.append = true;
-        } else if (tokens[i] == "&") {
-            p.background = true;
-        } else {
-            cur.argv.push_back(tokens[i]);
-        }
+*/
+/*
+#include <bits/stdc++.h>
+using namespace std;
+int main(){
+    int m;
+    long long n;
+    vector<int>num(n+1,0);
+    for(int i=1;i<=n;i++){
+        cin>>num[i];
     }
-    p.cmds.push_back(cur);
-    return p;
-}
-
-/* ---------------- 内建命令 cd ---------------- */
-
-bool builtin_cd(const vector<string>& argv) {
-    if (argv.empty() || argv[0] != "cd") return false;
-
-    char cwd[1024];
-    getcwd(cwd, sizeof(cwd));
-
-    string target;
-    if (argv.size() == 1) {
-        target = getenv("HOME");
-    } else if (argv[1] == "-") {
-        target = last_dir;
-        cout << target << endl;
-    } else {
-        target = argv[1];
+    vector<int>a(n+1,0);
+    for(int i=1;i<=n;i++){
+        a[i]+=num[i]+a[i-1];
     }
-
-    if (chdir(target.c_str()) == 0) {
-        last_dir = cwd;
-    } else {
-        perror("cd");
+    cin>>n>>m;
+    int l,r;
+    while(m--){
+    cin>>l>>r;
+    int result=a[r]-a[l-1];
+    cout<<result<<endl;
     }
-    return true;
-}
-
-/* ---------------- 执行 pipeline ---------------- */
-
-void execute_pipeline(Pipeline& p) {
-    int n = p.cmds.size();
-    int prev_fd = -1;
-    vector<pid_t> pids;
-
-    for (int i = 0; i < n; i++) {
-        int pipefd[2];
-        if (i < n - 1) {
-            if (pipe(pipefd) < 0) {
-                perror("pipe");
-                return;
-            }
-        }
-
-        pid_t pid = fork();
-        if (pid < 0) {
-            perror("fork");
-            return;
-        }
-
-        if (pid == 0) {
-            // 子进程
-            signal(SIGINT, SIG_IGN);
-
-            if (prev_fd != -1) {
-                dup2(prev_fd, STDIN_FILENO);
-                close(prev_fd);
-            }
-
-            if (i < n - 1) {
-                dup2(pipefd[1], STDOUT_FILENO);
-                close(pipefd[0]);
-                close(pipefd[1]);
-            }
-
-            Command& c = p.cmds[i];
-
-            if (!c.input.empty()) {
-                int fd = open(c.input.c_str(), O_RDONLY);
-                if (fd < 0) {
-                    perror("open input");
-                    exit(1);
-                }
-                dup2(fd, STDIN_FILENO);
-                close(fd);
-            }
-
-            if (!c.output.empty()) {
-                int fd;
-                if (c.append)
-                    fd = open(c.output.c_str(),
-                              O_WRONLY | O_CREAT | O_APPEND, 0644);
-                else
-                    fd = open(c.output.c_str(),
-                              O_WRONLY | O_CREAT | O_TRUNC, 0644);
-                if (fd < 0) {
-                    perror("open output");
-                    exit(1);
-                }
-                dup2(fd, STDOUT_FILENO);
-                close(fd);
-            }
-
-            vector<char*> argv;
-            for (auto& s : c.argv)
-                argv.push_back(const_cast<char*>(s.c_str()));
-            argv.push_back(nullptr);
-
-            execvp(argv[0], argv.data());
-            perror("execvp");
-            exit(1);
-        }
-
-        // 父进程
-        if (prev_fd != -1) close(prev_fd);
-        if (i < n - 1) {
-            close(pipefd[1]);
-            prev_fd = pipefd[0];
-        }
-        pids.push_back(pid);
+}*/
+#include <iostream>
+using namespace std;
+int main(){
+    const int n=5010;
+    int a[n];
+    int f[n];
+    int m;
+    cin>>m;
+    for(int i=0;i<m;i++){
+        cin>>a[i];
     }
-
-    if (!p.background) {
-        for (pid_t pid : pids)
-            waitpid(pid, nullptr, 0);
+    int res=0;
+    for(int i=0;i<m;i++){
+        f[i]=1;
+    for(int j=0;j<i;j++){
+    if(a[i]>a[j]){
+        f[i]=max(f[i],f[j]+1);
     }
-}
-
-/* ---------------- 主循环 ---------------- */
-
-int main() {
-    signal(SIGINT, SIG_IGN);
-
-    while (true) {
-        char cwd[1024];
-        getcwd(cwd, sizeof(cwd));
-
-        cout << "\033[1;32mgpt@gpt-super-shell\033[0m:"
-             << "\033[1;34m" << cwd << "\033[0m $ ";
-
-        string line;
-        if (!getline(cin, line)) break;
-        if (line.empty()) continue;
-        if (line == "exit") break;
-
-        auto tokens = tokenize(line);
-        if (tokens.empty()) continue;
-
-        if (builtin_cd(tokens)) continue;
-
-        Pipeline p = parse_pipeline(tokens);
-        execute_pipeline(p);
     }
-
+    res=max(res,f[i]);
+    }
+    cout<<res<<endl;
     return 0;
 }
