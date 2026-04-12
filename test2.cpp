@@ -306,9 +306,144 @@ int main(){
     cout<<max1<<endl;
 }
 */
-#include <iostream>
+/*
+#include <bits/stdc++.h>
 using namespace std;
 int main()
 {
- int 
+  int n,m;
+  cin>>n>>m;
+  const int N=100000;
+  int a[N];
+  for(int i=0;i<n;i++){
+    int x;
+    cin>>x;
+    a[i]=x;
+  }
+  sort(a,a+n);
+  int l=1e5+10;
+  for(int i=0;i+m-1<n;i++){
+   l=min(l,a[i+m-1]*a[i+m-1]-a[i]*a[i]);
+  }
+  cout<<l;
+  return 0;
 }
+  */
+ /*
+ #include <bits/stdc++.h>
+using namespace std;
+int main(){
+int last=-1,state=-1;
+int ans=0;
+    string a,b;
+    cin>>a>>b;
+    int n=a.size();
+    for(int i=0;i<n;i++){
+    if(a[i]=='.'&&b[i]=='.'){
+        continue;
+    }
+    if(last!=-1){
+     ans+=i-last-1;
+    }else if(a[i]=='#'&&b[i]=='#'){
+    state=1;
+    }
+     else if(a[i]=='#'&&b[i]=='.'){
+    if(state==3){
+     ans++;
+     state=3; 
+    }else{
+        state=2;
+    }
+}else if(a[i]=='.'&&b[i]=='#'){
+         if(state==2){
+           ans++;
+           state=1;
+       }else{
+           state=3;
+       }
+    }
+    last=i;
+}
+    cout<<ans<<endl;
+    return 0;
+}
+    */
+   /*
+#include <bits/stdc++.h>
+using namespace std;
+typedef long long ll;
+ const ll m=1e9+7;
+ const ll N=1e5+10;
+ll kmp(ll a,ll b,ll m){
+    ll res=1;
+    while(b>0){
+       if(b&1){
+        res=(res*a)%m;
+       }
+        a=(a*a)%m;
+       b>>=1;
+    }
+    return res;
+}
+
+int main(){
+    int s=0;
+    int n;
+    int ans=0;
+    int a[N];
+    cin>>n;
+    for(int i=1;i<=n;i++){
+        int x;
+        cin>>x;
+        a[i]=x;
+    }
+    for(int i=1;i<=n;i++){
+        s^=a[i];
+        if(n>i){
+           ans+=s*2*kmp(3,n-i-1,m);
+    }else{
+        ans+=s;
+    }
+    ans%=m;
+}
+    cout<<ans<<endl;
+    return 0;
+}*/
+/*
+#include <bits/stdc++.h>
+using namespace std;
+const int N=5e6+10;
+int main(){
+int n,p;
+    cin>>n>>p;
+    int a[N];
+    for(int i=1;i<=n;i++){
+    cin>>a[i];
+    }
+    int f[N]={0};
+    for(int i=1;i<=n;i++){
+    f[i]=a[i]-a[i-1];
+    }
+    int res=102;
+    while(p--){
+        int x,y,z;
+        cin>>x>>y>>z;
+        f[x]+=z;
+        f[y+1]-=z;
+    }
+    a[0]=0;
+     for(int i=1;i<=n;i++){
+        a[i]=a[i-1]+f[i];
+        res=min(res,a[i]);
+    }
+    cout<<res<<endl;
+    return 0;
+}*/
+#include <bits/stdc++.h>
+using namespace std;
+int dx[4]={1,-1,0,0};
+int dy[4]={0,0,-1,1};
+ void dfs(int x,int y){
+     queue<pair<int,int>> q;
+     
+ }
