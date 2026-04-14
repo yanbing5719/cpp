@@ -1,162 +1,167 @@
-/*struct SearchConfig {
+#include <bits/stdc++.h>
+#include <thread>
+#include <mutex>
+#include <filesystem>
+#include <condition_variable>
+
+using namespace std;
+namespace f=std::filesystem;
+
+struct SearchConfig {
     std::string root_path;    // 要搜索的根目录
     std::string file_type;    // 要搜索的文件类型，如 ".txt"、".cpp" 等
     int max_concurrency;      // 最大并发数
     int max_depth;            // 最大搜索深度
     bool skip_hidden;         // 是否跳过隐藏文件或目录
     std::vector<std::string> skip_paths;   // 要跳过的目录或文件的路径
-};*/
-#include <bits/stdc++.h>
-#include <filesystem>
-#include <thread>
-#include <mutex>
-#include <condition_variable>
-#include <queue>
-#include <set>
-
-using namespace std;
-namespace fs = std::filesystem; //别名
-
-struct SearchConfig {
-    string root_path;    
-    string file_type;    
-    int max_concurrency; 
-    int max_depth;       
-    bool skip_hidden;    
-    vector<string> skip_paths;   
 };
 
-class FileSearcher {
-private:
-    SearchConfig config;
+using s=SearchConfig;
 
-    queue<pair<fs::path, int>> tasks; // (路径, 深度)
-    mutex mtx;//锁任务队列
+class FileSearch{
+    private:
+    s obj;
+    //此处的path是了f里面的类，
+    queue<pair<f::path,int>> tasks; //路径，深度
+    mutex mtx;//锁住任务队列
     condition_variable cv;
-
-    vector<thread> workers;
-
-    bool stop = false;
-
-    set<string> result;
-    mutex res_mtx;//锁结果
-
-public:
-    FileSearcher(const SearchConfig& cfg) : config(cfg) {}
-
-    bool shouldSkip(const fs::path& p) {
-        string name = p.filename().string();//获取，文件名，并转化成string类型
-
-        if (config.skip_hidden && !name.empty() && name[0] == '.')
-            return true;
-
-        string full = p.string();//获得完整路径名
-        for (auto& s : config.skip_paths) {
-            if (full.find(s) != string::npos)
+    bool stop=false;
+    vector<thread> threads;
+    set<string> result;//存放结果，自动排序
+    mutex mt;//锁结果
+    int working = 0;
+    public:
+    //初始化
+    FileSearch(s& aim):obj(aim){}
+        
+        //判断是否要跳过一些特殊情况
+        bool isskip(const f::path &p){
+            //获取文件名
+            string name=p.filename().string();
+            if(obj.skip_hidden && !name.empty() && name[0]=='.'){
                 return true;
+            }
+            string full=p.string();
+            for(auto &t:obj.skip_paths){
+                if(full.find(t)!=string::npos){
+                 return true;
+                }//判断是否找到改路径
+            }
+            return false;
         }
-        return false;
-    }
-
-    void worker() {
-        while (true) {
-            pair<fs::path, int> task;
-
+    
+        //任务函数
+    void worker(){
+        while(1){
+            pair<f::path,int>task;
             {
                 unique_lock<mutex> lock(mtx);
-
-                cv.wait(lock, [&]() {
-                    return stop || !tasks.empty();
+                cv.wait(lock,[&](){
+                 return stop||!tasks.empty();
                 });
-
-                if (stop && tasks.empty())
-                    return;
-
-                task = tasks.front();
-                tasks.pop();
-            }
-
-            fs::path path = task.first;
-            int depth = task.second;
-
-            if (depth > config.max_depth)
-                continue;
-
-            try {
-                for (auto& entry : fs::directory_iterator(path)) {
-                    fs::path p = entry.path();
-
-                    if (shouldSkip(p)) continue;
-
-                    if (entry.is_directory()) {
-                        {
-                            lock_guard<mutex> lock(mtx);
-                            tasks.push({p, depth + 1});
-                        }
-                        cv.notify_one();
-                    }
-                    else if (entry.is_regular_file()) {
-                        if (p.extension() == config.file_type) {
-                            lock_guard<mutex> lock(res_mtx);
-                            result.insert(p.string());
-                        }
-                    }
+                if(stop&&tasks.empty()){
+                 return ;
                 }
-            } catch (...) {
-                // 忽略权限问题，捕获所有异常类型
+                task=tasks.front();
+                tasks.pop();
+                working++;
+            }
+            f::path path=task.first;
+            int depth=task.second;
+
+            if(depth<=obj.max_depth) {
+         try{
+                for(auto &file:f::directory_iterator(path)){
+                   f::path p=file.path();
+                   if(isskip(p)) continue;
+                   //判断是不是目录
+                   if(file.is_directory()){
+                    {
+                    lock_guard<mutex> lock(mtx);
+                    tasks.push({p,depth+1});
+                    }
+                    cv.notify_one();
+                   }
+                   else if(file.is_regular_file()){
+                    if(p.extension()== obj.file_type){
+                        lock_guard<mutex> lock(mt);
+                      result.insert(f::absolute(p).string());
+                    }
+                   }
+                }
+            }
+            catch(...){}
+        }
+    
+         {
+            lock_guard<mutex> lock(mtx);
+            working--;   
+
+            if(tasks.empty() && working == 0){
+                stop = true;
+                cv.notify_all();
             }
         }
     }
+}
 
-    void run() {
-        // 初始任务
-        tasks.push({config.root_path, 0});
+    void run(){
+        tasks.push({obj.root_path,0});
 
-        // 创建线程
-        for (int i = 0; i < config.max_concurrency; i++) {
-            workers.emplace_back(&FileSearcher::worker, this);
+        for(int i=0;i<obj.max_concurrency;i++){
+            threads.emplace_back(&FileSearch::worker,this);
         }
 
-        // 等待任务处理完（简单做法）
-        while (true) {
-            {
-                unique_lock<mutex> lock(mtx);
-                if (tasks.empty())
-                    break;
-            }
-            this_thread::sleep_for(chrono::milliseconds(100));
-        }
-
-        // 通知线程退出
-        {
-            unique_lock<mutex> lock(mtx);
-            stop = true;
-        }
-        cv.notify_all();
-
-        for (auto& t : workers)
+        for(auto &t: threads){
             t.join();
+        }
     }
 
-    void printResult() {
-        for (auto& s : result) {
-            cout << s << endl;
-        }
+    void print(){
+    for(auto &s:result){
+        cout<<s<<endl;
+       }
     }
 };
 
-int main() {
-    SearchConfig config;
-    config.root_path = ".";        // 当前目录
-    config.file_type = ".cpp";     
-    config.max_concurrency = 4;    
-    config.max_depth = 5;          
+s parseArgs(int argc, char* argv[]) {
+    s config;
+
+    // 直接写默认值
+    config.root_path = ".";
+    config.file_type = ".cpp";
+    config.max_concurrency = 4;
+    config.max_depth = 5;
     config.skip_hidden = true;
     config.skip_paths = {".git", "build"};
 
-    FileSearcher fs(config);
+    // 按顺序一个个判断
+    if (argc > 1) {
+        config.root_path = argv[1];
+    }
+
+    if (argc > 2) {
+        config.file_type = argv[2];
+    }
+
+    if (argc > 3) {
+        config.max_concurrency = stoi(argv[3]);
+    }
+
+    if (argc > 4) {
+        config.max_depth = stoi(argv[4]);
+    }
+
+    return config;
+}
+
+int main(int argc, char* argv[]) {
+    SearchConfig config = parseArgs(argc, argv);
+
+    FileSearch fs(config);
     fs.run();
-    fs.printResult();
+    fs.print();
 
     return 0;
 }
+   
