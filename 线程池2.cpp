@@ -1,4 +1,4 @@
-#include <iostream>
+/*#include <iostream>
 #include <thread>
 #include <mutex>
 #include <functional>
@@ -124,5 +124,149 @@ int main(){
         pool.enqueue(download,p.first,p.second);
     }
     pool.waitthread();
+    return 0;
+}
+*/
+#include <iostream>
+#include <thread>
+#include <mutex>
+#include <functional>
+#include <condition_variable>
+#include <vector>
+#include <queue>
+
+using namespace std;
+
+class threadpool {
+private:
+    vector<thread> works;
+    queue<function<void()>> tasks;
+
+    condition_variable cv;
+    condition_variable finished_cv;
+    mutex mtx;
+
+    bool stop;
+    int task_cnt; 
+
+public:
+    threadpool(int n = 10) {
+        stop = false;
+        task_cnt = 0;
+
+        for (int i = 0; i < n; i++) {
+            works.emplace_back([this]() {
+                while (true) {
+                    function<void()> task;
+
+                    {
+                        unique_lock<mutex> lock(this->mtx);
+
+                        while (!stop && tasks.empty()) {
+                            cv.wait(lock);
+                        }
+
+                        if (stop && tasks.empty()) {
+                            return;
+                        }
+
+                        task = move(tasks.front());
+                        tasks.pop();
+                    }
+
+                    task();
+
+                    {
+                        unique_lock<mutex> lock(this->mtx);
+                        task_cnt--;   
+                        if (task_cnt == 0) {
+                            finished_cv.notify_all();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    void enqueue(function<void()> task) {
+        {
+            unique_lock<mutex> lock(this->mtx);
+            tasks.push(task);
+            task_cnt++;   
+        }
+        cv.notify_one();
+    }
+
+    void waitthread() {
+        unique_lock<mutex> lock(this->mtx);
+        while (task_cnt != 0) {
+            finished_cv.wait(lock);
+        }
+    }
+
+    void clean() {
+        {
+            unique_lock<mutex> lock(this->mtx);
+            stop = true;
+        }
+
+        cv.notify_all();
+
+        for (thread &t : works) {
+            if (t.joinable()) {
+                t.join();
+            }
+        }
+    }
+
+    ~threadpool() {
+        clean();
+    }
+};
+
+mutex cout_mtx;
+
+void download(string url, string filename) {
+    {
+        lock_guard<mutex> lock(cout_mtx);
+        cout << "开始下载 " << url << endl;
+    }
+
+    string cmd = "wget -q -O " + filename + " " + url;
+    system(cmd.c_str());
+
+    {
+        lock_guard<mutex> lock(cout_mtx);
+        cout << "下载完成 " << filename << endl;
+    }
+}
+int main(){
+    threadpool pool(4);
+
+    int n;
+    cout<<"请输入要下载文件的数量: ";
+    cin>>n;
+
+    vector<pair<string,string>> inputs;
+
+
+    for(int i=0;i<n;i++){
+        string url,filename;
+        cout<<"请输入url: ";
+        cin>>url;
+        cout<<"请输入文件名: ";
+        cin>>filename;
+        inputs.push_back({url,filename});
+    }
+
+
+    for(auto &p:inputs){
+        pool.enqueue([=](){
+            download(p.first,p.second);
+        });
+    }
+
+    pool.waitthread();
+
     return 0;
 }
