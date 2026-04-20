@@ -253,24 +253,12 @@ int main(){
 #include <iostream>
 using namespace std;
 int main(){
-    const int n=5010;
-    int a[n];
-    int f[n];
-    int m;
-    cin>>m;
-    for(int i=0;i<m;i++){
-        cin>>a[i];
+    int *a=new int [10];
+    for(int i=0;i<10;i++){
+        a[i]=i+100;
+        cout<<a[i]<<endl;
     }
-    int res=0;
-    for(int i=0;i<m;i++){
-        f[i]=1;
-    for(int j=0;j<i;j++){
-    if(a[i]>a[j]){
-        f[i]=max(f[i],f[j]+1);
-    }
-    }
-    res=max(res,f[i]);
-    }
-    cout<<res<<endl;
+    delete [] a;
     return 0;
+    
 }
