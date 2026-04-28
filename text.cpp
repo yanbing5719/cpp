@@ -250,15 +250,76 @@ int main(){
     cout<<result<<endl;
     }
 }*/
+/*
 #include <iostream>
 using namespace std;
-int main(){
-    int *a=new int [10];
-    for(int i=0;i<10;i++){
-        a[i]=i+100;
-        cout<<a[i]<<endl;
-    }
-    delete [] a;
-    return 0;
+class Person{
     
+    public:
+    int age;
+    Person(){
+        cout<<"no parameters function"<<endl;
+    }
+    Person(int a){
+    age=a;
+    cout<<"have parameters function"<<endl;
+    }
+    Person(Person &p1){
+    age=p1.age;
+    cout<<"copy extablish"<<endl;
+    }
+
+    ~Person(){
+        cout<<"xi gou function"<<endl;
+    }
+};
+int main(){
+    Person p1;
+    Person p2(10);
+    Person p3(p2);
+    cout<<p2.age<<" "<<p3.age<<endl;
+    return 0;
+}*/
+#include <iostream>
+#include <cstring>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    // 1. 创建 socket
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+    // 2. 绑定地址
+    sockaddr_in addr;
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(8888);          // 端口
+    addr.sin_addr.s_addr = INADDR_ANY;    // 监听所有IP
+
+    bind(server_fd, (sockaddr*)&addr, sizeof(addr));
+
+    // 3. 监听
+    listen(server_fd, 5);
+
+    cout << "服务器启动，等待连接..." << endl;
+
+    // 4. 接受连接
+    int client_fd = accept(server_fd, nullptr, nullptr);
+
+    cout << "客户端已连接" << endl;
+
+    // 5. 接收数据
+    char buf[1024] = {0};
+    int n = recv(client_fd, buf, sizeof(buf), 0);
+
+    cout << "收到数据: " << buf << endl;
+    cout << "字节数: " << n << endl;
+
+    // 6. 关闭
+    close(client_fd);
+    close(server_fd);
+
+    return 0;
 }

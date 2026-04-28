@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <thread>
 #include <mutex>
@@ -34,6 +33,7 @@ threadpool(int numthread) :stop(false) {
 					tasks.pop();
 				}
         long long result=task.work();
+        //这里function函数是判断是否传入了参数
         if(task.callback){
           task.callback(result);
         }

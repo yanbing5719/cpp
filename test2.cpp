@@ -439,11 +439,45 @@ int n,p;
     cout<<res<<endl;
     return 0;
 }*/
-#include <bits/stdc++.h>
+/*
+#include <iostream>
 using namespace std;
-int dx[4]={1,-1,0,0};
-int dy[4]={0,0,-1,1};
- void dfs(int x,int y){
-     queue<pair<int,int>> q;
-     
- }
+class base{
+public:
+void name(){
+    cout<<"你好"<<endl;
+}
+void age(){
+    cout<<"18"<<endl;
+}
+};
+
+class chinese:public base{
+    public:
+void ch(){
+    cout<<"chinese"<<endl;
+}
+};
+
+class english:public base{
+public:
+    void uk(){
+    cout<<"english"<<endl;
+}
+};
+
+void test(){
+chinese c;
+c.name();
+c.age();
+c.ch();
+english e;
+e.name();
+e.age();
+e.uk();
+}
+int main(){
+ test();
+ return 0;
+    
+}*/
