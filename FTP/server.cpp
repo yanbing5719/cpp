@@ -8,19 +8,33 @@
 
 using namespace std;
 
-//工具函数
+//            ----------tool function-----------
+//command parameter
 string tool(const string &f_cmd){
     string filename;
-    for(int i=5;i<f_cmd.size();i++){
-        if((f_cmd[i]=='\r')||(f_cmd[i]=='\n')){
-            break;
-        }
-        filename+=f_cmd[i];
+    size_t pos=f_cmd.find(' ');
+    if(pos==string::npos){
+        return "";
     }
-    return filename;
+    return f_cmd.substr(pos+1);
 }
 
-//拆包
+//send data
+bool send_all(int fd,char *buf,int len){
+int total=0;
+while(total<len){
+    int n= send(fd,buf+total,len-total,0);
+    if(n<=0)return false;
+    total+=n;
+}
+return true;
+}
+
+//send response
+void send_response(int fd,const string&resp){
+    send_all(fd,(char*)resp.c_str(),resp.size());
+}
+//unpack
 bool cmd_recv(int fd,string &cache,string &cmd){
     while(true){
         size_t pos=cache.find("\r\n");
@@ -36,7 +50,18 @@ bool cmd_recv(int fd,string &cache,string &cmd){
     }
   
 }
-//解析命令
+
+//check pasv
+bool check_pasv(int fd,int &d_listenfd){
+  if(d_listenfd==-1){
+        string resp="425 use pasv first\r\n";
+        send_response(fd,resp);
+        return false;
+    }
+    return true;
+}
+
+//explain command
 int explain(string &cmd){
     if(cmd.substr(0,4)=="USER")return 1;
     if(cmd.substr(0,4)=="PASS")return 2;
@@ -45,20 +70,48 @@ int explain(string &cmd){
     if(cmd.substr(0,4)=="RETR")return 5;
     if(cmd.substr(0,4)=="STOR")return 6;
     if(cmd.substr(0,4)=="QUIT")return 7;
+    if(cmd.substr(0,4)=="SIZE")return 8;
+    if(cmd.substr(0,4)=="TYPE")return 9;
     return 0;
 }
 
 //user
-void cmd_user(int clientfd){
-    string username="331 ice\r\n";
-    send(clientfd,username.c_str(),username.size(),0);
+bool cmd_user(int clientfd,string &cmd){
+    string username=tool(cmd);
+    string uname="yanbing";
+    if(username==uname){
+        string resp="331 password required\r\n";
+    send(clientfd,resp.c_str(),resp.size(),0);
+        return true;
+    }
+        string resp= "530 invalid username\r\n";
+    send(clientfd,resp.c_str(),resp.size(),0);
+        return false;
+    
 }
 
 //pass
-void cmd_pass(int clientfd,bool &islogin){
-    islogin=true;
+bool cmd_pass(int clientfd,string &cmd){
+    string pword="yhsxxn";
+     string password=tool(cmd);
+    if(password==pword){
     string password="230 login successful\r\n";
     send(clientfd,password.c_str(),password.size(),0);
+    return true;    
+    }else{
+        return false;
+    }
+}
+
+//check login
+bool check_login(int fd,bool &islogin){
+    if(cmd_user&&cmd_pass){
+        islogin=true;
+        return true;
+    }
+    string resp="530 please login first\r\n";
+    send_response(fd,resp);
+    return false;
 }
 
 //pasv
@@ -85,16 +138,8 @@ void cmd_pasv(int clientfd,int &d_listenfd){
 
 //list
 void cmd_list(int clientfd,int &d_listenfd,bool&islogin){
-    if(!islogin){
-        string resp="530 please login first\r\n";
-        send(clientfd,resp.c_str(),resp.size(),0);
-        return ;
-    }
-    if(d_listenfd==-1){
-        string resp="425 use pasv first\r\n";
-        send(clientfd,resp.c_str(),resp.size(),0);
-        return ;
-    }
+    if(!check_login(clientfd,islogin))return ;
+    if(!check_pasv(clientfd,d_listenfd))return ;
     string resp="150 opening data connection\r\n";
     send(clientfd,resp.c_str(),resp.size(),0);
     int datafd=accept(d_listenfd,nullptr,nullptr);
@@ -103,11 +148,16 @@ void cmd_list(int clientfd,int &d_listenfd,bool&islogin){
     struct dirent *entry;
     string file;
     while((entry=readdir(dir))!=nullptr){
+        //skip "."and ".."
+        if(strcmp(entry->d_name,".")==0||
+        strcmp(entry->d_name,"..")==0){
+        continue;
+        }
      file+=entry->d_name;
      file+="\r\n";
     }
     closedir(dir);
-    send(datafd,file.c_str(),file.size(),0);
+   send_all(datafd,(char*)file.c_str(),file.size());
     close(datafd);
     close(d_listenfd);
     d_listenfd=-1;
@@ -117,16 +167,8 @@ void cmd_list(int clientfd,int &d_listenfd,bool&islogin){
 
 //retr
 void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
-    if(!islogin){
-        string resp="530 please login first\r\n";
-        send(clientfd,resp.c_str(),resp.size(),0);
-        return ;
-    }
-     if(d_listenfd==-1){
-        string resp="425 use pasv first\r\n";
-        send(clientfd,resp.c_str(),resp.size(),0);
-        return ;
-    }
+    if(!check_login(clientfd,islogin))return ;
+    if(!check_pasv(clientfd,d_listenfd))return ;
     string filename=tool(f_cmd);
     ifstream file(filename,ios::binary);
     if(!file){
@@ -139,8 +181,10 @@ void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
     while(1){
        file.read(buf,sizeof(buf));
        int n=file.gcount();
-       if(n<=0)break;
-       send(datafd,buf,n,0);
+       if(n<=0)break;//the last n=0
+      if(!send_all(datafd,buf,n)){
+        break;
+      }
     }
     close(datafd);
     close(d_listenfd);
@@ -151,16 +195,8 @@ void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
 
 //stor
 void cmd_stor(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
- if(!islogin){
-        string resp="530 please login first\r\n";
-        send(clientfd,resp.c_str(),resp.size(),0);
-        return ;
-    }
-if(d_listenfd==-1){
-        string resp="425 use pasv first\r\n";
-        send(clientfd,resp.c_str(),resp.size(),0);
-        return ;
-    }
+if(!check_login(clientfd,islogin))return ;
+if(!check_pasv(clientfd,d_listenfd))return ;
 string filename=tool(f_cmd);
 ofstream file(filename,ios::binary);
 send(clientfd, "150 Opening data connection\r\n", 31, 0);
@@ -183,6 +219,30 @@ send(clientfd, resp.c_str(), resp.size(), 0);
 void cmd_quit(int clientfd){
 string resp = "221 goodbye\r\n";
 send(clientfd, resp.c_str(), resp.size(), 0);    
+}
+
+//size
+void cmd_size(int clientfd,string&cmd){
+  string filenaetool(cmd);
+   string filename=tool(cmd);
+    ifstream file(filename,ios::binary);
+    if(!file){
+        string resp="550 can't open the file\r\n";
+        send(clientfd,resp.c_str(),resp.size(),0);
+        return ;
+    }
+    if(file.is_open()){
+    long long size=file.tellg();
+    string resp="213 "+to_string(size)+"\r\n";
+    send_response(clientfd,resp);
+    }
+    return ;
+}
+
+//type
+void cmd_type(int clientfd,string&cmd){
+    string resp="200 Type set to I\r\n";
+    send_response(clientfd,resp);
 }
 
 int main(){
@@ -220,16 +280,18 @@ int main(){
         break;
     }
    
-    cout<<"收到命令"<<cmd;
+    cout<<"收到命令"<<cmd<<endl;
     int choose=explain(cmd);
     switch(choose){
-        case 1:cmd_user(clientfd); break;
-        case 2:cmd_pass(clientfd,islogin);break;
+        case 1:cmd_user(clientfd,cmd); break;
+        case 2:if(!cmd_pass(clientfd,cmd))isrun=false;break;
         case 3:cmd_pasv(clientfd,d_listenfd);break;
         case 4:cmd_list(clientfd,d_listenfd,islogin);break;
         case 5:cmd_retr(clientfd,d_listenfd,islogin,cmd);break;
         case 6:cmd_stor(clientfd,d_listenfd,islogin,cmd);break;
         case 7:cmd_quit(clientfd);isrun=false;break;
+        case 8:cmd_size(clientfd,cmd);break;
+        case 9:cmd_size(clientfd,cmd);break;
         default:{
          string resp = "500 Unknown command\r\n";
          send(clientfd, resp.c_str(), resp.size(), 0);
