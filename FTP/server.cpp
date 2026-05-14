@@ -7,7 +7,7 @@
 #include <fstream>
 
 using namespace std;
-
+bool isright=false;
 //            ----------tool function-----------
 //command parameter
 string tool(const string &f_cmd){
@@ -34,6 +34,7 @@ return true;
 void send_response(int fd,const string&resp){
     send_all(fd,(char*)resp.c_str(),resp.size());
 }
+
 //unpack
 bool cmd_recv(int fd,string &cache,string &cmd){
     while(true){
@@ -76,36 +77,35 @@ int explain(string &cmd){
 }
 
 //user
-bool cmd_user(int clientfd,string &cmd){
+void cmd_user(int clientfd,string &cmd){
     string username=tool(cmd);
     string uname="yanbing";
     if(username==uname){
         string resp="331 password required\r\n";
     send(clientfd,resp.c_str(),resp.size(),0);
-        return true;
+        isright=true;
+        return ;
     }
         string resp= "530 invalid username\r\n";
     send(clientfd,resp.c_str(),resp.size(),0);
-        return false;
-    
 }
 
 //pass
-bool cmd_pass(int clientfd,string &cmd){
-    string pword="yhsxxn";
+void cmd_pass(int clientfd,string &cmd){
+    string pword="123";
      string password=tool(cmd);
     if(password==pword){
     string password="230 login successful\r\n";
     send(clientfd,password.c_str(),password.size(),0);
-    return true;    
-    }else{
-        return false;
+    isright=true;
+    return ;    
     }
+    return ;
 }
 
 //check login
 bool check_login(int fd,bool &islogin){
-    if(cmd_user&&cmd_pass){
+    if(isright){
         islogin=true;
         return true;
     }
@@ -176,6 +176,7 @@ void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
         send(clientfd,resp.c_str(),resp.size(),0);
         return ;
     }
+    send_response(clientfd,"150 opening data connection\r\n");
     int datafd=accept(d_listenfd,nullptr,nullptr);
     char buf[1024];
     while(1){
@@ -283,8 +284,14 @@ int main(){
     cout<<"收到命令"<<cmd<<endl;
     int choose=explain(cmd);
     switch(choose){
-        case 1:cmd_user(clientfd,cmd); break;
-        case 2:if(!cmd_pass(clientfd,cmd))isrun=false;break;
+        case 1:cmd_user(clientfd,cmd);
+         if(isright==false)
+               isrun=false;
+               break;
+        case 2:cmd_pass(clientfd,cmd);
+               if(isright==false)
+               isrun=false;
+               break;
         case 3:cmd_pasv(clientfd,d_listenfd);break;
         case 4:cmd_list(clientfd,d_listenfd,islogin);break;
         case 5:cmd_retr(clientfd,d_listenfd,islogin,cmd);break;
