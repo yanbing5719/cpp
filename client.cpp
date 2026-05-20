@@ -95,14 +95,24 @@ string recv_buffer(){
 
   //creat sock and print cmd
   int creat_sock(const string cmd,int code){
-    int datasock=pasv();
-    if(datasock<0)return -1;
+     string ip;
+     int port;
+     if(!pasv(ip,port)){
+        return -1;
+     }
     send_cmd(cmd);
     string resp=recv_buffer();
     cout<<resp<<endl;
+    if(resp.size()<3){
+    cout<<"服务器响应异常"<<endl;
+    return -1;
+}
     int re_code=stoi(resp.substr(0,3));
     if(re_code!=code){
-        close(datasock);
+        return -1;
+    }
+    int datasock=connect_socket(ip,port);
+    if(datasock<0){
         return -1;
     }
     return datasock;
@@ -123,7 +133,7 @@ bool ConnectServer(const string &ip,int ports){
 }
 
 //client pasv（send data)
-  int pasv(){
+  bool pasv(string &ip,int &port){
 
   send_cmd("PASV");
   string resp=recv_buffer();
@@ -134,7 +144,7 @@ bool ConnectServer(const string &ip,int ports){
   int p1=resp.find('(');
   int p2=resp.find(')');
   if(p1==string::npos||p2==string::npos){
-    return -1;
+    return false;
   }
 
   string ans=resp.substr(p1+1,p2-p1-1);
@@ -149,12 +159,12 @@ bool ConnectServer(const string &ip,int ports){
     ans.erase(0,pos+1);
   }
 
-  int port=nip[4]*256+nip[5];
-  string ip=to_string(nip[0])+"."+to_string(nip[1])
+   port=nip[4]*256+nip[5];
+ ip=to_string(nip[0])+"."+to_string(nip[1])
   +"."+to_string(nip[2])+"."+to_string(nip[3]);
  
-  int datasock=connect_socket(ip,port);
-  return datasock;
+  sleep(1);
+  return true;
   }
 
   //Login
@@ -218,7 +228,7 @@ bool ConnectServer(const string &ip,int ports){
     string resp=recv_buffer();
     cout<<resp<<endl;
     if(stoi(resp.substr(0,3))==226){
-        cout<<"下在完成"<<endl;
+        cout<<"下载完成"<<endl;
     }else{
         cout<<"传输异常"<<endl;
     }
@@ -226,13 +236,13 @@ bool ConnectServer(const string &ip,int ports){
 
 //stor
  void stor(const string filename){
-    ifstream file(filename,ios::binary);
-    if(!file.is_open()){
+    int datasock=creat_sock("STOR "+filename,150);
+        if(datasock<0)return ;
+        ifstream file(filename,ios::binary);
+         if(!file.is_open()){
         cout<<"文件不存在"<<endl;
         return ;
     }
-    int datasock=creat_sock("STOR "+filename,150);
-        if(datasock<0)return ;
     char buf[4096];
     while(1){
         file.read(buf,sizeof(buf));
@@ -243,6 +253,11 @@ bool ConnectServer(const string &ip,int ports){
     file.close();
     close(datasock);
     string resp=recv_buffer();
+    cout<<resp<<endl;
+    if(resp.size()<3){
+    cout<<"服务器响应异常"<<endl;
+    return;
+}
     int code=stoi(resp.substr(0,3));
     if(code==226){
         cout<<"上传完成"<<endl;
@@ -264,7 +279,7 @@ void shell(){
             list();
             continue;
         }
-        if(cmd.substr(0,5)=="RETR"){
+        if(cmd.substr(0,4)=="RETR"){
             string filename=cmd.substr(5);
             //delete 空格
             while(!filename.empty()&&filename[0]==' '){
@@ -273,7 +288,7 @@ void shell(){
             retr(filename);
             continue;
         }
-        if(cmd.substr(0,5)=="STOR"){
+        if(cmd.substr(0,4)=="STOR"){
             string filename=cmd.substr(5);
             while(!filename.empty()&&filename[0]==' '){
                 filename.erase(0,1);
@@ -284,6 +299,10 @@ void shell(){
         send_cmd(cmd);
         string resp=recv_buffer();
         cout<<resp<<endl;
+        if(resp.size()<3){
+    cout<<"服务器响应异常"<<endl;
+    return;
+}
         int code=stoi(resp.substr(0,3));
         if(cmd=="QUIT"){
             if(code==221){
