@@ -13,7 +13,8 @@ class FtpClient{
 private:
 int consocket;
 string recvbuffer;//Temporary buffer
-
+ string cmd;
+string ans;
 public:
 
 FtpClient(){
@@ -45,6 +46,35 @@ int connect_socket(const string ip,int ports){
    return sock;
 }
 
+//explain command
+
+string exp_cmd(string &ans){
+
+if(ans=="ls"){
+
+cmd="LIST";
+
+}else if(ans.substr(0,3)=="get"){
+
+cmd="RETR "+ans.substr(4);
+
+}else if(ans.substr(0,3)=="put"){
+
+cmd="STOR "+ans.substr(4);
+
+}else if(ans.substr(0)=="quit"){
+
+cmd="QUIT";
+
+}else{
+
+cmd=ans;
+
+}
+
+return cmd;
+
+}
 //send command ftp
 bool send_cmd(const string &cmd){
     string data=cmd+"\r\n";
@@ -100,6 +130,10 @@ string recv_buffer(){
      if(!pasv(ip,port)){
         return -1;
      }
+    int datasock=connect_socket(ip,port);
+    if(datasock<0){
+        return -1;
+    }
     send_cmd(cmd);
     string resp=recv_buffer();
     cout<<resp<<endl;
@@ -109,10 +143,7 @@ string recv_buffer(){
 }
     int re_code=stoi(resp.substr(0,3));
     if(re_code!=code){
-        return -1;
-    }
-    int datasock=connect_socket(ip,port);
-    if(datasock<0){
+        close(datasock);
         return -1;
     }
     return datasock;
@@ -147,23 +178,21 @@ bool ConnectServer(const string &ip,int ports){
     return false;
   }
 
-  string ans=resp.substr(p1+1,p2-p1-1);
+  string np=resp.substr(p1+1,p2-p1-1);
   vector<int> nip;
   while(1){
-    int pos=ans.find(',');
+    int pos=np.find(',');
     if(pos==string::npos){
-        nip.push_back(stoi(ans));
+        nip.push_back(stoi(np));
         break;
     }
-    nip.push_back(stoi(ans.substr(0,pos)));
-    ans.erase(0,pos+1);
+    nip.push_back(stoi(np.substr(0,pos)));
+    np.erase(0,pos+1);
   }
 
    port=nip[4]*256+nip[5];
  ip=to_string(nip[0])+"."+to_string(nip[1])
   +"."+to_string(nip[2])+"."+to_string(nip[3]);
- 
-  sleep(1);
   return true;
   }
 
@@ -241,6 +270,9 @@ bool ConnectServer(const string &ip,int ports){
         ifstream file(filename,ios::binary);
          if(!file.is_open()){
         cout<<"文件不存在"<<endl;
+        close(datasock);
+        string resp=recv_buffer();
+        cout<<resp<<endl;
         return ;
     }
     char buf[4096];
@@ -271,7 +303,8 @@ void shell(){
     while(1){
         string cmd;
         cout<<"ftp> ";
-        getline(cin,cmd);
+        getline(cin,ans);
+        cmd=exp_cmd(ans);
         if(cmd.empty()){
             continue;
         }

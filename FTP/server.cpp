@@ -171,27 +171,32 @@ void cmd_list(int clientfd,int &d_listenfd,bool&islogin){
 
 //retr
 void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
-   // cout<<"before check login"<<endl;
     if(!check_login(clientfd,islogin))return ;
-    //cout<<"beore check pasv"<<endl;
     if(!check_pasv(clientfd,d_listenfd))return ;
-    string filename=tool(f_cmd);
-   //cout<<"before cout 150"<<endl;
-    send_response(clientfd,"150 opening data connection\r\n");
-    //cout<<"before accept"<<endl;
+     
     int datafd=accept(d_listenfd,nullptr,nullptr);
-    //cout<<"after accept"<<endl;
     if(datafd<0){
      send_response(clientfd,"425 data connection failed\r\n");
+     close(datafd);
+     close(d_listenfd);
+     d_listenfd=-1;
         return;
 }
-ifstream file(filename,ios::binary);
+
+    string filename=tool(f_cmd);
+    ifstream file(filename,ios::binary);
     if(!file){
         string resp="550 can't open the file\r\n";
         send(clientfd,resp.c_str(),resp.size(),0);
+        close(datafd);
+        close(d_listenfd);
+        d_listenfd=-1;
+        
         return ;
     }
- char buf[1024];
+    send_response(clientfd,"150 opening data connection\r\n");
+    int datafd=accept(d_listenfd,nullptr,nullptr);
+    char buf[1024];
     while(1){
        file.read(buf,sizeof(buf));
        int n=file.gcount();
@@ -222,6 +227,8 @@ void cmd_stor(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
    if(!file){
         send_response(clientfd,"550 can't create file\r\n");
         close(datafd);
+        close(d_listenfd);
+        d_listenfd=-1;
         return;
     }
     char buf[1024];
