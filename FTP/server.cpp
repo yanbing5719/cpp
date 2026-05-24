@@ -195,7 +195,6 @@ void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
         return ;
     }
     send_response(clientfd,"150 opening data connection\r\n");
-    int datafd=accept(d_listenfd,nullptr,nullptr);
     char buf[1024];
     while(1){
        file.read(buf,sizeof(buf));
@@ -216,13 +215,13 @@ void cmd_retr(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
 void cmd_stor(int clientfd,int &d_listenfd,bool&islogin,string &f_cmd){
    if(!check_login(clientfd,islogin))return ;
    if(!check_pasv(clientfd,d_listenfd))return ;
-   string filename=tool(f_cmd);
-   send_response(clientfd, "150 Opening data connection\r\n");
    int datafd=accept(d_listenfd,nullptr,nullptr);
    if(datafd<0){
      send_response(clientfd,"425 data connection failed\r\n");
         return;
     }
+    string filename=tool(f_cmd);
+   send_response(clientfd, "150 Opening data connection\r\n");
    ofstream file(filename,ios::binary);
    if(!file){
         send_response(clientfd,"550 can't create file\r\n");

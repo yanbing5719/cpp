@@ -264,17 +264,14 @@ bool ConnectServer(const string &ip,int ports){
 }
 
 //stor
- void stor(const string filename){
-    int datasock=creat_sock("STOR "+filename,150);
-        if(datasock<0)return ;
+ void stor(const string filename){ 
         ifstream file(filename,ios::binary);
          if(!file.is_open()){
         cout<<"文件不存在"<<endl;
-        close(datasock);
-        string resp=recv_buffer();
-        cout<<resp<<endl;
         return ;
     }
+     int datasock=creat_sock("STOR "+filename,150);
+        if(datasock<0)return ;
     char buf[4096];
     while(1){
         file.read(buf,sizeof(buf));
