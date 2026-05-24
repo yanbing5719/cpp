@@ -11,6 +11,7 @@ using namespace std;
 bool isright=false;
 //            ----------tool function-----------
 //command parameter
+
 string tool(const string &f_cmd){
     string filename;
     size_t pos=f_cmd.find(' ');
@@ -135,8 +136,25 @@ void cmd_pasv(int clientfd,int &d_listenfd){
     //返回FTP要求的端口号
     int p1=port/256;
     int p2=port%256;
-    string report="227 Entering Passive Mode (127,0,0,1,"+
-    to_string(p1)+","+to_string(p2)+")\r\n";
+    //获取服务器地址
+     sockaddr_in localaddr;
+     socklen_t locallen=sizeof(localaddr);
+     getsockname(clientfd,(sockaddr*)&localaddr,&locallen);
+     // 转换成字符串
+string ip=inet_ntoa(localaddr.sin_addr);
+
+// 192.168.1.100 -> 192,168,1,100
+for(char &c:ip){
+    if(c=='.'){
+        c=',';
+    }
+}
+
+string report=
+"227 Entering Passive Mode ("+
+ip+","+
+to_string(p1)+","+
+to_string(p2)+")\r\n";
     send(clientfd,report.c_str(),report.size(),0);
 }
 
@@ -275,6 +293,7 @@ void cmd_type(int clientfd,string&cmd){
     string resp="200 Type set to I\r\n";
     send_response(clientfd,resp);
 }
+
 
 int main(){
     //当程序向一个已经关闭的连接（管道或Socket）写入数据时，

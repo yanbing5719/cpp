@@ -201,7 +201,7 @@ bool ConnectServer(const string &ip,int ports){
     
     send_cmd("USER "+user);
     string resp=recv_buffer();
-    cout<<resp<<endl;
+    //cout<<resp<<endl;
     if(resp.substr(0,3)!="331"){
         return false;
     }
@@ -267,7 +267,7 @@ bool ConnectServer(const string &ip,int ports){
  void stor(const string filename){ 
         ifstream file(filename,ios::binary);
          if(!file.is_open()){
-        cout<<"文件不存在"<<endl;
+        cout<<"can't find the file"<<endl;
         return ;
     }
      int datasock=creat_sock("STOR "+filename,150);
