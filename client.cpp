@@ -11,10 +11,12 @@ using namespace std;
 class FtpClient{
 
 private:
+
 int consocket;
 string recvbuffer;//Temporary buffer
- string cmd;
+string cmd;
 string ans;
+
 public:
 
 FtpClient(){
@@ -221,6 +223,17 @@ bool ConnectServer(const string &ip,int ports){
     return resp.substr(0,3)=="200";
   }
   
+  //rest
+  bool rest(long long pos){
+  send_cmd("REST "+to_string(pos));
+  string recv=recv_buffer();
+  cout<<recv<<endl;
+  if(recv.size()<3){
+    return false;
+  }
+  return recv.substr(0,3)=="350";
+  }
+
   //list
  void list( ){
     int datasock=creat_sock("LIST",150);
@@ -238,9 +251,22 @@ bool ConnectServer(const string &ip,int ports){
 
  //retr
   void retr(const string filename){
+    long long pos=0;
+    ifstream checkfile(filename,ios::binary);
+    if(checkfile){
+        checkfile.seekg(0,ios::end);
+        pos=checkfile.tellg();
+        checkfile.close();
+    }
+    if(pos>0){
+        if(!rest(pos)){
+            cout<<"REST失败"<<endl;
+            return ;
+        }
+    }
     int datasock=creat_sock("RETR "+filename,150);
     if(datasock<0)return ;
-    ofstream file(filename,ios::binary);
+    ofstream file(filename,ios::binary|ios::app);
     if(!file){
         cout<<"文件创建失败"<<endl;
         close(datasock);
@@ -269,11 +295,20 @@ bool ConnectServer(const string &ip,int ports){
          if(!file.is_open()){
         cout<<"can't find the file"<<endl;
         return ;
-    }
-     int datasock=creat_sock("STOR "+filename,150);
+         }
+        long long pos=cmd_size(filename);
+        if(pos>0){
+            if(!rest(pos)){
+                return ;
+            }else{
+                pos=0;
+            }
+        }
+        file.seekg(pos,ios::beg);
+        int datasock=creat_sock("STOR "+filename,150);
         if(datasock<0)return ;
-    char buf[4096];
-    while(1){
+        char buf[4096];
+     while(1){
         file.read(buf,sizeof(buf));
         int n=file.gcount();
         if(n<=0)break;
@@ -293,6 +328,17 @@ bool ConnectServer(const string &ip,int ports){
     }else{
         cout<<"上传异常"<<endl;
     }
+    }
+
+//size
+long long cmd_size(string filename){
+        send_cmd("SIZE "+filename);
+          string resp=recv_buffer();
+         cout<<resp<<endl;
+        if(resp.substr(0,3)!="213"){
+         return -1;
+    }
+    return stoll(resp.substr(4));
     }
 
 //shell
