@@ -258,12 +258,27 @@ bool ConnectServer(const string &ip,int ports){
         pos=checkfile.tellg();
         checkfile.close();
     }
-    if(pos>0){
-        if(!rest(pos)){
-            cout<<"REST失败"<<endl;
-            return ;
+   long long server_size=cmd_size(filename);
+   if(server_size<0){
+    cout<<"服务器文件不存在"<<endl;
+    return ;
+   }
+   if(server_size==pos){
+    cout<<"文件下载完成"<<endl;
+    return ;
+   }
+   if(pos>server_size){
+    cout<<"本地文件大于服务器文件"<<endl;
+    return ;
+   }
+    if(pos<0){
+            pos=0;
+        }else{
+            if(!rest(pos)){
+               cout<<"REST failed"<<endl; 
+               pos=0;
+            }
         }
-    }
     int datasock=creat_sock("RETR "+filename,150);
     if(datasock<0)return ;
     ofstream file(filename,ios::binary|ios::app);
@@ -297,11 +312,13 @@ bool ConnectServer(const string &ip,int ports){
         return ;
          }
         long long pos=cmd_size(filename);
-        if(pos>0){
+        if(pos<0){
+            pos=0;
+        }
+             if(pos>0){
             if(!rest(pos)){
-                return ;
-            }else{
-                pos=0;
+            cout<<"REST失败"<<endl;
+            return ;
             }
         }
         file.seekg(pos,ios::beg);
@@ -338,7 +355,12 @@ long long cmd_size(string filename){
         if(resp.substr(0,3)!="213"){
          return -1;
     }
-    return stoll(resp.substr(4));
+    string num=resp.substr(4);
+    size_t pos=num.find("\r\n");
+    if(pos!=string::npos){
+        num=num.substr(0,pos);
+    }
+    return stoll(num);
     }
 
 //shell

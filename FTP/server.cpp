@@ -167,7 +167,8 @@ to_string(p2)+")\r\n";
 }
 
 //list
-void cmd_list(int clientfd,int &d_listenfd,bool &islogin,bool &isright){
+void cmd_list(int clientfd,int &d_listenfd,
+    bool &islogin,bool &isright){
     if(!check_login(clientfd,islogin,isright))return ;
     if(!check_pasv(clientfd,d_listenfd))return ;
     string resp="150 opening data connection\r\n";
@@ -203,7 +204,8 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
      
     int datafd=accept(d_listenfd,nullptr,nullptr);
     if(datafd<0){
-     send_response(clientfd,"425 data connection failed\r\n");
+     send_response(clientfd,
+        "425 data connection failed\r\n");
      close(datafd);
      close(d_listenfd);
      d_listenfd=-1;
@@ -251,27 +253,40 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
 }
 
 //stor
-void cmd_stor(int clientfd,int &d_listenfd,bool &islogin,bool &isright,string &f_cmd){
+void cmd_stor(int clientfd,int &d_listenfd,bool &islogin,
+    bool &isright,string &f_cmd,long long &file_pos){
    if(!check_login(clientfd,islogin,isright))return ;
    if(!check_pasv(clientfd,d_listenfd))return ;
    int datafd=accept(d_listenfd,nullptr,nullptr);
    if(datafd<0){
-     send_response(clientfd,"425 data connection failed\r\n");
-        close(datafd);
-        close(d_listenfd);
-        d_listenfd=-1;
-        return;
+     send_response(clientfd,
+        "425 data connection failed\r\n");
+     close(datafd);
+     close(d_listenfd);
+     d_listenfd=-1;
+     return;
     }
     string filename=tool(f_cmd);
-   send_response(clientfd, "150 Opening data connection\r\n");
-   ofstream file(filename,ios::binary);
+   send_response(clientfd, 
+    "150 Opening data connection\r\n");
+   fstream file(filename,ios::binary
+    |ios::in|ios::out);
+    if(!file){
+        ofstream creatfile(filename,ios::binary);
+        creatfile.close();
+        file.open(filename,ios::binary
+            |ios::in|ios::out);
+    }
    if(!file){
-        send_response(clientfd,"550 can't create file\r\n");
+        send_response(clientfd,
+            "550 can't create file\r\n");
         close(datafd);
         close(d_listenfd);
         d_listenfd=-1;
         return;
     }
+
+     file.seekp(file_pos,ios::beg);
     char buf[1024];
     string cache;
    while(1){
@@ -282,6 +297,7 @@ void cmd_stor(int clientfd,int &d_listenfd,bool &islogin,bool &isright,string &f
 close(datafd);
 close(d_listenfd);
 d_listenfd=-1;
+file_pos=0;
 string resp = "226 Transfer complete\r\n";
 send(clientfd, resp.c_str(), resp.size(), 0);
 }
@@ -296,7 +312,7 @@ send(clientfd, resp.c_str(), resp.size(), 0);
 void cmd_size(int clientfd,string&cmd){
   //string filenaetool(cmd);
    string filename=tool(cmd);
-    ifstream file(filename,ios::binary);
+   ifstream file(filename,ios::binary);
     if(!file){
         string resp="550 can't open the file\r\n";
         send(clientfd,resp.c_str(),resp.size(),0);
@@ -357,7 +373,7 @@ void process_client(int clientfd){
         case 3:cmd_pasv(clientfd,d_listenfd);break;
         case 4:cmd_list(clientfd,d_listenfd,islogin,isright);break;
         case 5:cmd_retr(clientfd,d_listenfd,islogin,isright,cmd,file_pos);break;
-        case 6:cmd_stor(clientfd,d_listenfd,islogin,isright,cmd);break;
+        case 6:cmd_stor(clientfd,d_listenfd,islogin,isright,cmd,file_pos);break;
         case 7:cmd_quit(clientfd);isrun=false;break;
         case 8:cmd_size(clientfd,cmd);break;
         case 9:cmd_type(clientfd,cmd);break;
