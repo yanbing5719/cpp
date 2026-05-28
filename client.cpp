@@ -77,6 +77,16 @@ cmd=ans;
 return cmd;
 
 }
+
+//explain pathname
+string exp_path(const string&path){
+size_t pos=path.find_last_of('/');
+if(pos==string::npos){
+    return path;
+}
+return path.substr(pos+1);
+}
+
 //send command ftp
 bool send_cmd(const string &cmd){
     string data=cmd+"\r\n";
@@ -250,9 +260,14 @@ bool ConnectServer(const string &ip,int ports){
  }
 
  //retr
-  void retr(const string filename){
+  void retr(const string &filename){
     long long pos=0;
-    ifstream checkfile(filename,ios::binary);
+    string local_file=filename;
+    size_t pos_last = local_file.find_last_of("/\\");
+    if(pos_last != string::npos){
+        local_file= filename.substr(pos_last + 1);
+    }
+    ifstream checkfile(local_file,ios::binary);
     if(checkfile){
         checkfile.seekg(0,ios::end);
         pos=checkfile.tellg();
@@ -263,7 +278,7 @@ bool ConnectServer(const string &ip,int ports){
     cout<<"服务器文件不存在"<<endl;
     return ;
    }
-   if(server_size==pos){
+   if(server_size==pos&&pos>0){
     cout<<"文件下载完成"<<endl;
     return ;
    }
@@ -271,17 +286,15 @@ bool ConnectServer(const string &ip,int ports){
     cout<<"本地文件大于服务器文件"<<endl;
     return ;
    }
-    if(pos<0){
-            pos=0;
-        }else{
-            if(!rest(pos)){
+    if(pos>0){
+          if(!rest(pos)){
                cout<<"REST failed"<<endl; 
                pos=0;
-            }
+            }  
         }
     int datasock=creat_sock("RETR "+filename,150);
     if(datasock<0)return ;
-    ofstream file(filename,ios::binary|ios::app);
+    ofstream file(local_file,ios::binary|ios::app);
     if(!file){
         cout<<"文件创建失败"<<endl;
         close(datasock);
@@ -305,25 +318,45 @@ bool ConnectServer(const string &ip,int ports){
 }
 
 //stor
- void stor(const string filename){ 
-        ifstream file(filename,ios::binary);
+
+ void stor(const string &localpath,
+    const string &remotepath){ 
+        long long pos=0;
+        long long server_size=cmd_size(remotepath);
+        if(server_size>0){
+            pos=server_size;
+            if(!rest(pos)){
+                cout<<"REST failed"<<endl;
+                pos=0;
+            }
+        }
+        ifstream file(localpath,ios::binary);
          if(!file.is_open()){
         cout<<"can't find the file"<<endl;
         return ;
          }
-        long long pos=cmd_size(filename);
-        if(pos<0){
-            pos=0;
+        /* long long local_size = 0;
+    file.seekg(0, ios::end);
+    local_size = file.tellg();
+    file.seekg(0, ios::beg);
+   
+        if(pos<0)pos=0;
+        if(local_size<=pos){
+            cout<<"文件已成功上传或本地文件更小"<<endl;
+            file.close();
+            return;
         }
-             if(pos>0){
-            if(!rest(pos)){
-            cout<<"REST失败"<<endl;
-            return ;
-            }
+        if(pos>0){
+          if(!rest(pos)){
+               cout<<"REST failed"<<endl; 
+               pos=0;
+               file.seekg(0,ios::beg);
+            }  
         }
         file.seekg(pos,ios::beg);
-        int datasock=creat_sock("STOR "+filename,150);
+        int datasock=creat_sock("STOR "+remotepath,150);
         if(datasock<0)return ;
+
         char buf[4096];
      while(1){
         file.read(buf,sizeof(buf));
@@ -347,6 +380,115 @@ bool ConnectServer(const string &ip,int ports){
     }
     }
 
+/*
+void stor(const string &localpath,
+          const string &remotepath)
+{
+    long long pos = 0;
+
+    // 获取服务器文件大小
+    long long server_size = cmd_size(remotepath);
+
+    if(server_size > 0)
+    {
+        pos = server_size;
+
+        // 告诉服务器从哪里继续写
+        if(!rest(pos))
+        {
+            cout<<"REST failed"<<endl;
+            pos = 0;
+        }
+    }
+
+    // 打开本地文件
+    ifstream file(localpath, ios::binary);
+
+    if(!file)
+    {
+        cout<<"can't find the file"<<endl;
+        return;
+    }
+
+    // 获取本地文件大小
+    file.seekg(0, ios::end);
+
+    long long local_size = file.tellg();
+
+    // 服务器文件比本地还大
+    if(pos > local_size)
+    {
+        cout<<"服务器文件比本地文件大"<<endl;
+        file.close();
+        return;
+    }
+
+    // 已经上传完成
+    if(pos == local_size)
+    {
+        cout<<"文件已经上传完成"<<endl;
+        file.close();
+        return;
+    }
+
+    // ★★★★★关键：跳过已上传部分
+    file.seekg(pos, ios::beg);
+
+    // 创建数据连接
+    int datasock =
+        creat_sock("STOR " + remotepath, 150);
+
+    if(datasock < 0)
+    {
+        file.close();
+        return;
+    }
+
+    char buf[4096];
+
+    while(1)
+    {
+        file.read(buf, sizeof(buf));
+
+        int n = file.gcount();
+
+        if(n <= 0)
+            break;
+
+        if(!sendall(datasock, buf, n))
+        {
+            cout<<"send failed"<<endl;
+            break;
+        }
+    }
+
+    file.close();
+
+    // ★★★★★必须关闭数据连接
+    close(datasock);
+
+    // 等服务器226响应
+    string resp = recv_buffer();
+
+    cout<<resp<<endl;
+
+    if(resp.size() < 3)
+    {
+        cout<<"服务器响应异常"<<endl;
+        return;
+    }
+
+    int code = stoi(resp.substr(0,3));
+
+    if(code == 226)
+    {
+        cout<<"上传完成"<<endl;
+    }
+    else
+    {
+        cout<<"上传异常"<<endl;
+    }
+}*/
 //size
 long long cmd_size(string filename){
         send_cmd("SIZE "+filename);
@@ -387,11 +529,12 @@ void shell(){
             continue;
         }
         if(cmd.substr(0,4)=="STOR"){
-            string filename=cmd.substr(5);
-            while(!filename.empty()&&filename[0]==' '){
-                filename.erase(0,1);
+            string localpath=cmd.substr(5);
+            while(!localpath.empty()&&localpath[0]==' '){
+                localpath.erase(0,1);
             }
-            stor(filename);
+            string remotepath=exp_path(localpath);
+            stor(localpath,remotepath);
             continue;
         }
         send_cmd(cmd);
