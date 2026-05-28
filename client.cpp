@@ -323,7 +323,7 @@ bool ConnectServer(const string &ip,int ports){
     const string &remotepath){ 
         long long pos=0;
         long long server_size=cmd_size(remotepath);
-        if(server_size>0){
+        if(server_size>=0){
             pos=server_size;
             if(!rest(pos)){
                 cout<<"REST failed"<<endl;
@@ -335,13 +335,13 @@ bool ConnectServer(const string &ip,int ports){
         cout<<"can't find the file"<<endl;
         return ;
          }
-        /* long long local_size = 0;
+        long long local_size = 0;
     file.seekg(0, ios::end);
     local_size = file.tellg();
     file.seekg(0, ios::beg);
    
         if(pos<0)pos=0;
-        if(local_size<=pos){
+        if(local_size==pos){
             cout<<"文件已成功上传或本地文件更小"<<endl;
             file.close();
             return;
@@ -380,115 +380,7 @@ bool ConnectServer(const string &ip,int ports){
     }
     }
 
-/*
-void stor(const string &localpath,
-          const string &remotepath)
-{
-    long long pos = 0;
 
-    // 获取服务器文件大小
-    long long server_size = cmd_size(remotepath);
-
-    if(server_size > 0)
-    {
-        pos = server_size;
-
-        // 告诉服务器从哪里继续写
-        if(!rest(pos))
-        {
-            cout<<"REST failed"<<endl;
-            pos = 0;
-        }
-    }
-
-    // 打开本地文件
-    ifstream file(localpath, ios::binary);
-
-    if(!file)
-    {
-        cout<<"can't find the file"<<endl;
-        return;
-    }
-
-    // 获取本地文件大小
-    file.seekg(0, ios::end);
-
-    long long local_size = file.tellg();
-
-    // 服务器文件比本地还大
-    if(pos > local_size)
-    {
-        cout<<"服务器文件比本地文件大"<<endl;
-        file.close();
-        return;
-    }
-
-    // 已经上传完成
-    if(pos == local_size)
-    {
-        cout<<"文件已经上传完成"<<endl;
-        file.close();
-        return;
-    }
-
-    // ★★★★★关键：跳过已上传部分
-    file.seekg(pos, ios::beg);
-
-    // 创建数据连接
-    int datasock =
-        creat_sock("STOR " + remotepath, 150);
-
-    if(datasock < 0)
-    {
-        file.close();
-        return;
-    }
-
-    char buf[4096];
-
-    while(1)
-    {
-        file.read(buf, sizeof(buf));
-
-        int n = file.gcount();
-
-        if(n <= 0)
-            break;
-
-        if(!sendall(datasock, buf, n))
-        {
-            cout<<"send failed"<<endl;
-            break;
-        }
-    }
-
-    file.close();
-
-    // ★★★★★必须关闭数据连接
-    close(datasock);
-
-    // 等服务器226响应
-    string resp = recv_buffer();
-
-    cout<<resp<<endl;
-
-    if(resp.size() < 3)
-    {
-        cout<<"服务器响应异常"<<endl;
-        return;
-    }
-
-    int code = stoi(resp.substr(0,3));
-
-    if(code == 226)
-    {
-        cout<<"上传完成"<<endl;
-    }
-    else
-    {
-        cout<<"上传异常"<<endl;
-    }
-}*/
 //size
 long long cmd_size(string filename){
         send_cmd("SIZE "+filename);

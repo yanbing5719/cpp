@@ -10,30 +10,38 @@
 using namespace std;
  class threadpool{
   public:
-threadpool(int numthread) :stop(false) {
-		 //创建线程
-		for (int i = 0; i < numthread; i++) {
-			//lambda函数
-			threads.emplace_back([this]() {
-				while (1) {
-					unique_lock<mutex> lock(mtx);
-					condition.wait(lock, [this]() {
-						//线程为空或者终止，发出信号（生产者和消费者模型）
-						return !tasks.empty() || stop;
-						});
-					//线程终止，直接return 
-					if (stop&&tasks.empty()) {
-						return;
-					}
-					 //取出任务
-					function<void()> task=move(tasks.front());
-					tasks.pop();
-					task();
-				}
-				});
-		}
-	}
+  
+threadpool(int numthread) : stop(false) {
 
+    for (int i = 0; i < numthread; i++) {
+
+        threads.emplace_back([this]() {
+
+            while (1) {
+
+                function<void()> task;
+
+                {
+                    unique_lock<mutex> lock(mtx);
+
+                    condition.wait(lock, [this]() {
+                        return !tasks.empty() || stop;
+                    });
+
+                    if (stop && tasks.empty()) {
+                        return;
+                    }
+
+                    task = move(tasks.front());
+                    tasks.pop();
+                }
+
+                // 锁已经释放
+                task();
+            }
+        });
+    }
+}
 	//析构函数：在对象生命周期结束时自动调用，用于执行清理工作（如释放资源、关闭文件等）
 	
 	~threadpool() {

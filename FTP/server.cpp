@@ -228,7 +228,7 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
         close(datafd);
         close(d_listenfd);
         d_listenfd=-1;
-        
+        file_pos=0;
         return ;
     }
     file.seekg(0,ios::end);
@@ -256,157 +256,157 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
     close(datafd);
     close(d_listenfd);
     d_listenfd=-1;
+    file_pos=0;
     string resp="226 transfer complete\r\n";
     send(clientfd,resp.c_str(),resp.size(),0);
 }
 
-//stor0
-/*
-void cmd_stor(int clientfd,int &d_listenfd,bool &islogin,
-    bool &isright,string &f_cmd,long long &file_pos){
-   if(!check_login(clientfd,islogin,isright))return ;
-   if(!check_pasv(clientfd,d_listenfd))return ;
-   int datafd=accept(d_listenfd,nullptr,nullptr);
-   if(datafd<0){
-     send_response(clientfd,
-        "425 data connection failed\r\n");
-     close(datafd);
-     close(d_listenfd);
-     d_listenfd=-1;
-     file_pos=0;
-     return;
-    }
-    string filename=tool(f_cmd);
-    filename.erase(0, filename.find_first_not_of(" \t"));
-    filename.erase(filename.find_last_not_of(" \t\r\n") + 1);
-    if(filename.empty()){
-       send_response(clientfd, "550 No filename given\r\n");
-       close(datafd); close(d_listenfd); d_listenfd=-1;
-       file_pos=0;
-       return;
-   }
-   send_response(clientfd, 
-    "150 Opening data connection\r\n");
+//stor
+void cmd_stor(int clientfd, int &d_listenfd, bool &islogin,
+    bool &isright, string &f_cmd, long long &file_pos){
 
-   fstream file(filename,ios::binary
-    |ios::in|ios::out);
-    if(!file){
-        ofstream creatfile(filename,
-            ios::binary|ios::out|ios::app);
-        if(!creatfile){
-            send_response(clientfd,"550 invalid path\r\n");
-            close(datafd);
-            close(d_listenfd);
-            d_listenfd=-1;
-            return;
-        }
-        creatfile.close();
-        file.clear();
-        file.open(filename,ios::binary
-            |ios::in|ios::out);
-    }
-   if(!file){
-        send_response(clientfd,
-            "550 can't create file\r\n");
-        close(datafd);
-        close(d_listenfd);
-        d_listenfd=-1;
+    if(!check_login(clientfd, islogin, isright)){
+        file_pos = 0;
         return;
     }
 
- if(file_pos > 0){
-       file.seekp(file_pos, ios::beg);
-   }
-  
-    char buf[1024];
-    string cache;
-   while(1){
-   int n=recv(datafd,buf,sizeof(buf),0);
-   if(n<=0)break;
-   file.write(buf,n);
- }
- file.flush();
-close(datafd);
-close(d_listenfd);
-d_listenfd=-1;
-file_pos=0;
-string resp = "226 Transfer complete\r\n";
-send(clientfd, resp.c_str(), resp.size(), 0);
-}
+    if(!check_pasv(clientfd, d_listenfd)){
+        file_pos = 0;
+        return;
+    }
 
-*/
-void cmd_stor(int clientfd, int &d_listenfd, bool &islogin,
-    bool &isright, string &f_cmd, long long &file_pos){
-   if(!check_login(clientfd, islogin, isright)) { file_pos = 0; return; }
-   if(!check_pasv(clientfd, d_listenfd)) { file_pos = 0; return; }
-   
-   int datafd = accept(d_listenfd, nullptr, nullptr);
-   if(datafd < 0){
-        send_response(clientfd, "425 data connection failed\r\n");
+    // 先回应150
+    send_response(clientfd,
+        "150 Opening data connection\r\n");
+
+    // 再accept
+    int datafd = accept(d_listenfd, nullptr, nullptr);
+
+    if(datafd < 0){
+        send_response(clientfd,
+            "425 data connection failed\r\n");
+
         close(d_listenfd);
         d_listenfd = -1;
-        file_pos = 0; // 异常退出必须重置断点
+
+        file_pos = 0;
         return;
     }
 
     string filename = tool(f_cmd);
-    filename.erase(0, filename.find_first_not_of(" \t"));
-    filename.erase(filename.find_last_not_of(" \t\r\n") + 1);
+
+    filename.erase(0,
+        filename.find_first_not_of(" \t"));
+
+    filename.erase(
+        filename.find_last_not_of(" \t\r\n") + 1);
+
     if(filename.empty()){
-        send_response(clientfd, "550 No filename given\r\n");
-        close(datafd); close(d_listenfd); d_listenfd = -1;
+
+        send_response(clientfd,
+            "550 No filename given\r\n");
+
+        close(datafd);
+        close(d_listenfd);
+
+        d_listenfd = -1;
         file_pos = 0;
+
         return;
     }
-
-    // 先贴心地向客户端回应 150
-    send_response(clientfd, "150 Opening data connection\r\n");
 
     fstream file;
 
-    // ★★★ 核心修复：根据是否是断点续传，决定截断还是追加 ★★★
-    if (file_pos > 0) {
-        // 说明是断点续传：用 读+写 模式打开，不输入 ios::trunc 从而保留原文件内容
-        file.open(filename, ios::binary | ios::in | ios::out);
-        if (file) {
-            file.seekp(file_pos, ios::beg); // 极其重要：精准定位到断点
+
+    if(file_pos > 0){
+
+
+        file.open(filename,
+            ios::binary |
+            ios::in |
+            ios::out);
+
+    
+        if(!file.is_open()){
+
+            file.clear();
+
+            ofstream create_file(filename,
+                ios::binary |
+                ios::out);
+
+            create_file.close();
+
+       
+            file.open(filename,
+                ios::binary |
+                ios::in |
+                ios::out);
         }
-    } else {
-        // 说明是普通上传或覆盖上传：用 ios::trunc 强制清空可能存在的同名旧文件
-        file.open(filename, ios::binary | ios::out | ios::trunc);
+
+
+        if(file.is_open()){
+            file.seekp(file_pos, ios::beg);
+        }
+
+    }
+   
+    else{
+
+        
+        file.open(filename,
+            ios::binary |
+            ios::out |
+            ios::trunc);
     }
 
-    // 如果打开失败（比如目录权限问题、路径非法）
     if(!file.is_open()){
-        send_response(clientfd, "550 can't open or create file\r\n");
+
+        send_response(clientfd,
+            "550 can't open or create file\r\n");
+
         close(datafd);
         close(d_listenfd);
+
         d_listenfd = -1;
         file_pos = 0;
+
         return;
     }
 
-    // 开始接收数据并写入
-    char buf[1024];
+    // 接收文件
+    char buf[4096];
+
     while(1){
-        int n = recv(datafd, buf, sizeof(buf), 0);
-        if(n <= 0) break; // 客户端发送完毕或断开
+
+        int n = recv(datafd,
+            buf,
+            sizeof(buf),
+            0);
+
+        if(n <= 0){
+            break;
+        }
+
         file.write(buf, n);
+
+        if(!file){
+            break;
+        }
     }
 
     file.flush();
     file.close();
-    
-    // 关闭数据连接与监听
+
     close(datafd);
     close(d_listenfd);
-    d_listenfd = -1;
-    
-    // ★★★ 无论成功还是失败，本次 STOR 结束后必须清空断点标记 ★★★
-    file_pos = 0; 
 
-    string resp = "226 Transfer complete\r\n";
-    send(clientfd, resp.c_str(), resp.size(), 0);
+    d_listenfd = -1;
+
+    file_pos = 0;
+
+    send_response(clientfd,
+        "226 Transfer complete\r\n");
 }
 //quit
 void cmd_quit(int clientfd){
@@ -524,6 +524,15 @@ int main(){
     addr.sin_port=htons(2100);
     addr.sin_addr.s_addr=INADDR_ANY;
    
+    //允许在 TIME_WAIT 状态立即重启服务器
+    //允许多个 socket 绑定到同一端口（需配合其他条件）
+    int opt = 1;
+setsockopt(listenfd,
+           SOL_SOCKET,
+           SO_REUSEADDR,
+           &opt,
+           sizeof(opt));
+
     bind(listenfd,(sockaddr*)&addr,sizeof(addr));
     //监听
     listen(listenfd,5);
