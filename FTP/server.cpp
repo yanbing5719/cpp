@@ -279,147 +279,104 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
 //stor
 void cmd_stor(int clientfd, int &d_listenfd, bool &islogin,
     bool &isright, string &f_cmd, long long &file_pos){
-
     if(!check_login(clientfd, islogin, isright)){
         file_pos = 0;
         return;
     }
-
     if(!check_pasv(clientfd, d_listenfd)){
         file_pos = 0;
         return;
     }
-
     // 先回应150
     send_response(clientfd,
         "150 Opening data connection\r\n");
-
     // 再accept
     int datafd = accept(d_listenfd, nullptr, nullptr);
-
     if(datafd < 0){
         send_response(clientfd,
             "425 data connection failed\r\n");
-
         close(d_listenfd);
         d_listenfd = -1;
-
         file_pos = 0;
         return;
     }
-
     string filename = tool(f_cmd);
-
     filename.erase(0,
         filename.find_first_not_of(" \t"));
-
     filename.erase(
         filename.find_last_not_of(" \t\r\n") + 1);
-
     if(filename.empty()){
-
         send_response(clientfd,
             "550 No filename given\r\n");
-
         close(datafd);
-        close(d_listenfd);
-
+        close(d_listenfd);   
         d_listenfd = -1;
         file_pos = 0;
-
         return;
     }
-
     fstream file;
 
-
     if(file_pos > 0){
-
-
         file.open(filename,
             ios::binary |
             ios::in |
             ios::out);
-
     
         if(!file.is_open()){
-
             file.clear();
-
             ofstream create_file(filename,
                 ios::binary |
                 ios::out);
 
             create_file.close();
 
-       
             file.open(filename,
                 ios::binary |
                 ios::in |
                 ios::out);
         }
 
-
         if(file.is_open()){
-            file.seekp(file_pos, ios::beg);
+            file.seekp(file_pos, ios::beg);//从指定位置写入文件
         }
-
     }
-   
     else{
-
-        
         file.open(filename,
             ios::binary |
             ios::out |
             ios::trunc);
     }
-
     if(!file.is_open()){
-
         send_response(clientfd,
             "550 can't open or create file\r\n");
-
         close(datafd);
         close(d_listenfd);
-
         d_listenfd = -1;
         file_pos = 0;
-
         return;
     }
 
     // 接收文件
     char buf[4096];
-
     while(1){
-
         int n = recv(datafd,
             buf,
             sizeof(buf),
             0);
-
         if(n <= 0){
             break;
         }
-
         file.write(buf, n);
-
         if(!file){
             break;
         }
     }
-
     file.flush();
     file.close();
-
     close(datafd);
     close(d_listenfd);
-
     d_listenfd = -1;
-
     file_pos = 0;
-
     send_response(clientfd,
         "226 Transfer complete\r\n");
 }
@@ -476,7 +433,7 @@ void cmd_type(int clientfd, string&cmd){
 //rest
 void cmd_rest(int clientfd,string &cmd,long long &file_pos){
   string pos_line=tool(cmd);
-  file_pos=stoll(pos_line);
+  file_pos=stoll(pos_line);//将字符串改为long long 类型的整数
   string resp="350 Restart position accepted\r\n";
     send_response(clientfd,resp);
 }

@@ -51,31 +51,18 @@ int connect_socket(const string ip,int ports){
 //explain command
 
 string exp_cmd(string &ans){
-
 if(ans=="ls"){
-
 cmd="LIST";
-
 }else if(ans.substr(0,3)=="get"){
-
 cmd="RETR "+ans.substr(4);
-
 }else if(ans.substr(0,3)=="put"){
-
 cmd="STOR "+ans.substr(4);
-
 }else if(ans.substr(0)=="quit"){
-
 cmd="QUIT";
-
 }else{
-
 cmd=ans;
-
 }
-
 return cmd;
-
 }
 
 //explain pathname
@@ -270,7 +257,7 @@ bool ConnectServer(const string &ip,int ports){
     ifstream checkfile(local_file,ios::binary);
     if(checkfile){
         checkfile.seekg(0,ios::end);
-        pos=checkfile.tellg();
+        pos=checkfile.tellg();      //获取当前指针的位置
         checkfile.close();
     }
    long long server_size=cmd_size(filename);
