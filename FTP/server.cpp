@@ -7,6 +7,9 @@
 #include <fstream>
 #include <signal.h>
 #include <mutex>
+#include <fcntl.h>
+#include <sys/sendfile.h>
+#include <sys/stat.h>
 
 #include "threadpool.cpp"
 
@@ -221,8 +224,9 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
         close(datafd); close(d_listenfd); d_listenfd=-1;
         return;
     }
-    ifstream file(filename,ios::binary);
-    if(!file){
+    int fd=open(filename.c_str(),O_RDONLY);
+    //ifstream file(filename,ios::binary);
+    if(fd<0){
         string resp="550 can't open the file\r\n";
         send(clientfd,resp.c_str(),resp.size(),0);
         close(datafd);
@@ -231,8 +235,11 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
         file_pos=0;
         return ;
     }
-    file.seekg(0,ios::end);
-    long long filesize=file.tellg();
+   /* file.seekg(0,ios::end);
+    long long filesize=file.tellg();*/
+     struct stat st;
+     fstat(fd,&st);
+     off_t filesize=st.st_size;
     if(file_pos>filesize){
         send_response(clientfd,
         "554 invalid restart position\r\n");
@@ -242,9 +249,10 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
          file_pos=0;
           return;
     }
-    file.seekg(file_pos,ios::beg);
+    //file.seekg(file_pos,ios::beg);
     send_response(clientfd,"150 opening data connection\r\n");
-    char buf[1024];
+     off_t offset=file_pos;
+   /* char buf[1024];
     while(1){
        file.read(buf,sizeof(buf));
        int n=file.gcount();
@@ -252,7 +260,14 @@ void cmd_retr(int clientfd,int &d_listenfd,bool &islogin,
       if(!send_all(datafd,buf,n)){
         break;
       }
+    }*/
+   while(offset<filesize){
+    ssize_t n=sendfile(datafd,fd,&offset,filesize-offset);
+    if(n<=0){
+        break;
     }
+   }
+    close(fd);
     close(datafd);
     close(d_listenfd);
     d_listenfd=-1;
