@@ -280,6 +280,7 @@ int main(){
     cout<<p2.age<<" "<<p3.age<<endl;
     return 0;
 }*/
+/*
 #include <iostream>
 #include <cstring>
 #include <sys/socket.h>
@@ -322,4 +323,4 @@ int main() {
     close(server_fd);
 
     return 0;
-}
+}*/
